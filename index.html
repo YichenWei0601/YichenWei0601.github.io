@@ -323,68 +323,68 @@
             <!-- 第一组项目 -->
             <div class="project-item">
                 <a href="#" onclick="openProject('test1')">test1</a>
-                <div class="project-description">前端开发项目</div>
+                <div class="project-description">---</div>
             </div>
             <div class="project-item">
                 <a href="#" onclick="openProject('test2')">test2</a>
-                <div class="project-description">数字化解决方案</div>
+                <div class="project-description">---</div>
             </div>
             <div class="project-item">
                 <a href="#" onclick="openProject('test3')">test3</a>
-                <div class="project-description">企业自动化</div>
+                <div class="project-description">---</div>
             </div>
             <div class="project-item">
                 <a href="#" onclick="openProject('test4')">test4</a>
-                <div class="project-description">移动应用开发</div>
+                <div class="project-description">---</div>
             </div>
             <div class="project-item">
                 <a href="#" onclick="openProject('test5')">test5</a>
-                <div class="project-description">AI智能系统</div>
+                <div class="project-description">---</div>
             </div>
             <div class="project-item">
                 <a href="#" onclick="openProject('test6')">test6</a>
-                <div class="project-description">数据分析平台</div>
+                <div class="project-description">---</div>
             </div>
             <div class="project-item">
                 <a href="#" onclick="openProject('test7')">test7</a>
-                <div class="project-description">云计算服务</div>
+                <div class="project-description">---</div>
             </div>
             <div class="project-item">
                 <a href="#" onclick="openProject('test8')">test8</a>
-                <div class="project-description">区块链应用</div>
+                <div class="project-description">---</div>
             </div>
             <!-- 第二组项目 - 重复内容实现无缝循环 -->
             <div class="project-item">
                 <a href="#" onclick="openProject('test1')">test1</a>
-                <div class="project-description">前端开发项目</div>
+                <div class="project-description">---</div>
             </div>
             <div class="project-item">
                 <a href="#" onclick="openProject('test2')">test2</a>
-                <div class="project-description">数字化解决方案</div>
+                <div class="project-description">---</div>
             </div>
             <div class="project-item">
                 <a href="#" onclick="openProject('test3')">test3</a>
-                <div class="project-description">企业自动化</div>
+                <div class="project-description">---</div>
             </div>
             <div class="project-item">
                 <a href="#" onclick="openProject('test4')">test4</a>
-                <div class="project-description">移动应用开发</div>
+                <div class="project-description">---</div>
             </div>
             <div class="project-item">
                 <a href="#" onclick="openProject('test5')">test5</a>
-                <div class="project-description">AI智能系统</div>
+                <div class="project-description">---</div>
             </div>
             <div class="project-item">
                 <a href="#" onclick="openProject('test6')">test6</a>
-                <div class="project-description">数据分析平台</div>
+                <div class="project-description">---</div>
             </div>
             <div class="project-item">
                 <a href="#" onclick="openProject('test7')">test7</a>
-                <div class="project-description">云计算服务</div>
+                <div class="project-description">---</div>
             </div>
             <div class="project-item">
                 <a href="#" onclick="openProject('test8')">test8</a>
-                <div class="project-description">区块链应用</div>
+                <div class="project-description">---</div>
             </div>
         </div>
     </div>
@@ -563,187 +563,22 @@
         async function loadMarkdownFromPath(projectName) {
             // 由于浏览器安全限制，我们使用预定义的内容
             const markdownContents = {
-                'test1': `# Test1 项目详情
-
-## 项目简介
-这是 Test1 项目的详细介绍。这个项目展示了现代Web技术的应用。
-
-## 主要功能
-- 响应式设计
-- 用户交互优化
-- 性能优化
-
-## 技术栈
-- HTML5
-- CSS3
-- JavaScript ES6+
-- Three.js
-
-## 开发进度
-- [x] 基础框架搭建
-- [x] 核心功能实现
-- [ ] 测试优化
-- [ ] 部署上线`,
-
-                'test2': `# Test2 项目详情
-
-## 项目概述
-Test2 是一个创新的数字化解决方案，专注于提升用户体验。
-
-## 核心特性
-- 智能算法优化
-- 实时数据处理
-- 跨平台兼容性
-
-## 架构设计
-- 前端：React + TypeScript
-- 后端：Node.js + Express
-- 数据库：MongoDB
-
-## 项目亮点
-- 🚀 高性能渲染
-- 🎨 精美的UI设计
-- 🔧 模块化架构
-- 📱 移动端适配`,
-
-                'test3': `# Test3 项目详情
-
-## 项目背景
-Test3 致力于解决现代企业数字化转型中的关键问题。
-
-## 解决方案
-- 自动化工作流程
-- 数据可视化分析
-- 云端集成服务
-
-## 技术实现
-\`\`\`javascript
-// 核心算法示例
-function optimizePerformance(data) {
-    return data.filter(item => item.priority > 0)
-               .sort((a, b) => b.score - a.score);
-}
-\`\`\`
-
-## 成果展示
-- 效率提升 60%
-- 成本降低 40%
-- 用户满意度 95%`,
-
-                'test4': `# Test4 移动应用开发
-
-## 应用概述
-专注于移动端用户体验的跨平台应用开发项目。
-
-## 核心功能
-- 离线数据同步
-- 实时推送通知
-- 地理位置服务
-- 社交分享功能
-
-## 技术选型
-- React Native
-- Redux状态管理
-- Firebase后端服务
-- 原生模块集成
-
-## 性能优化
-- 图片懒加载
-- 内存管理优化
-- 网络请求缓存
-- 启动时间优化`,
-
-                'test5': `# Test5 AI智能系统
-
-## 系统介绍
-基于机器学习的智能决策支持系统。
-
-## AI能力
-- 自然语言处理
-- 图像识别分析
-- 预测性分析
-- 智能推荐算法
-
-## 技术架构
-- Python + TensorFlow
-- 微服务架构
-- Docker容器化
-- Kubernetes编排
-
-## 应用场景
-- 智能客服系统
-- 内容推荐引擎
-- 风险预警系统
-- 自动化决策支持`,
-
-                'test6': `# Test6 数据分析平台
-
-## 平台功能
-企业级数据分析和可视化平台。
-
-## 核心模块
-- 数据采集引擎
-- ETL数据处理
-- 实时计算分析
-- 可视化仪表板
-
-## 技术栈
-- Apache Spark
-- Elasticsearch
-- D3.js可视化
-- Redis缓存
-
-## 业务价值
-- 实时业务监控
-- 数据驱动决策
-- 性能指标分析
-- 趋势预测模型`,
-
-                'test7': `# Test7 云计算服务
-
-## 服务概述
-面向企业的一站式云计算解决方案。
-
-## 服务内容
-- 云主机租赁
-- 容器化部署
-- 负载均衡
-- 自动扩缩容
-
-## 技术基础
-- AWS/Azure云平台
-- Terraform基础设施即代码
-- CI/CD自动化部署
-- 监控告警系统
-
-## 优势特点
-- 99.9%可用性保证
-- 弹性资源分配
-- 成本优化建议
-- 7x24技术支持`,
-
-                'test8': `# Test8 区块链应用
-
-## 应用背景
-基于区块链技术的去中心化应用开发。
-
-## 核心特性
-- 智能合约开发
-- 数字资产管理
-- 去中心化身份认证
-- 跨链互操作性
-
-## 技术实现
-- Ethereum/Polygon网络
-- Solidity智能合约
-- Web3.js前端集成
-- IPFS分布式存储
-
-## 应用场景
-- 数字货币交易
-- NFT艺术品平台
-- 供应链追溯
-- 去中心化金融(DeFi)`
+                'test1': `# Test
+                to be updated`,
+                'test2': `# Test
+                to be updated`,
+                'test3': `# Test
+                to be updated`,
+                'test4': `# Test
+                to be updated`,
+                'test5': `# Test
+                to be updated`,
+                'test6': `# Test
+                to be updated`,
+                'test7': `# Test
+                to be updated`,
+                'test': `# Test
+                to be updated`,
             };
             
             return markdownContents[projectName] || `# ${projectName.toUpperCase()}项目\n\n项目详情开发中...`;
