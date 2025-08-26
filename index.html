@@ -1,0 +1,1507 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>星际穿梭 - 3D星空与月球</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Gugi&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #000;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+        
+        #starfield {
+            display: block;
+            background: radial-gradient(ellipse at center, #1a1a2e 0%, #000 100%);
+            position: absolute;
+            z-index: 1;
+        }
+        
+        #moon-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none;
+        }
+        
+        #moon-canvas {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 1.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            z-index: 2;
+            pointer-events: auto;
+        }
+        
+        #moon-canvas.zoomed {
+            transform: translate(-140%, -50%) scale(1.5);
+            border-radius: 50%;
+            width: 300px;
+            height: 300px;
+            z-index: 10;
+        }
+        
+        #moon-canvas:hover {
+            filter: brightness(0.8);
+            box-shadow: 0 0 300px rgba(255, 255, 255, 0.3);
+        }
+        
+        #moon-canvas.zoomed:hover {
+            filter: brightness(1.05);
+        }
+        
+        /* 项目列表样式 */
+        .project-list {
+            position: fixed;
+            right: 10%;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 560px;
+            height: 400px;
+            overflow: hidden;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.8s ease;
+            z-index: 15;
+            pointer-events: none;
+        }
+        
+        .project-list.visible {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+        
+        .project-list-content {
+            height: 200%; /* 让内容高度是容器的2倍，实现无缝循环 */
+            opacity: 0;
+            transition: opacity 1.5s ease 0.5s; /* 只保留透明度过渡 */
+        }
+        
+        .project-list.visible .project-list-content {
+            opacity: 1;
+        }
+        
+        .project-item {
+            margin: 15px 0;
+            padding: 0;
+            background: transparent;
+            border: none;
+            transition: all 0.3s ease;
+        }
+        
+        .project-item:hover {
+            /* 移除放大效果，只保留颜色变化 */
+        }
+        
+        .project-item a {
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 28px;
+            font-weight: 400;
+            font-family: 'Gugi', sans-serif;
+            display: block;
+            transition: color 0.3s ease;
+        }
+        
+        .project-item a:hover {
+            color: #00ffff;
+        }
+        
+        .project-description {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 18px;
+            font-family: 'Gugi', sans-serif;
+            margin-top: 5px;
+        }
+        
+        /* Markdown内容显示区域 */
+        .markdown-display {
+            position: fixed;
+            right: 5%;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 650px;
+            height: 500px;
+            background: rgba(40, 40, 40, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 30px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.8s ease;
+            z-index: 20;
+            pointer-events: none;
+            backdrop-filter: blur(10px);
+            overflow-y: auto;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .markdown-display.visible {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+        
+        .markdown-display::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .markdown-display::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+        
+        .markdown-display::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+        }
+        
+        .markdown-display::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+        
+        .markdown-content {
+            color: #ffffff;
+            font-family: 'Gugi', sans-serif;
+            line-height: 1.6;
+        }
+        
+        .markdown-content h1 {
+            color: #00ffff;
+            font-size: 32px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #00ffff;
+            padding-bottom: 10px;
+        }
+        
+        .markdown-content h2 {
+            color: #ffffff;
+            font-size: 24px;
+            margin: 25px 0 15px 0;
+        }
+        
+        .markdown-content h3 {
+            color: #cccccc;
+            font-size: 20px;
+            margin: 20px 0 10px 0;
+        }
+        
+        .markdown-content p {
+            margin-bottom: 15px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .markdown-content ul, .markdown-content ol {
+            margin: 15px 0;
+            padding-left: 25px;
+        }
+        
+        .markdown-content li {
+            margin-bottom: 8px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .markdown-content code {
+            background: rgba(0, 255, 255, 0.1);
+            color: #00ffff;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .markdown-content pre {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            overflow-x: auto;
+        }
+        
+        .markdown-content pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        .markdown-close-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: #ffffff;
+            font-size: 24px;
+            cursor: pointer;
+            transition: color 0.3s ease;
+            z-index: 21;
+        }
+        
+        .markdown-close-btn:hover {
+            color: #00ffff;
+        }
+        
+        /* 音乐控制按钮样式 */
+        .music-control {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            z-index: 100;
+        }
+        
+        #music-toggle {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(40, 40, 40, 0.8);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: #ffffff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        
+        #music-toggle:hover {
+            background: rgba(0, 255, 255, 0.2);
+            border-color: #00ffff;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+        
+        #music-icon {
+            line-height: 1;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="starfield"></canvas>
+    
+    <!-- 月球容器 -->
+    <div id="moon-container">
+        <div id="moon-canvas"></div>
+    </div>
+
+    <!-- 音频元素 -->
+    <audio id="background-music" loop preload="auto">
+        <source src="music/Horizon_daft_punk.mp3" type="audio/mpeg">
+        您的浏览器不支持音频播放。
+    </audio>
+
+    <!-- 音乐控制按钮 -->
+    <div class="music-control" id="music-control">
+        <button id="music-toggle" onclick="toggleMusic()">
+            <span id="music-icon">⏹︎️</span>
+        </button>
+    </div>
+
+    <!-- 项目列表 -->
+    <div class="project-list" id="project-list">
+        <div class="project-list-content">
+            <!-- 第一组项目 -->
+            <div class="project-item">
+                <a href="#" onclick="openProject('test1')">test1</a>
+                <div class="project-description">前端开发项目</div>
+            </div>
+            <div class="project-item">
+                <a href="#" onclick="openProject('test2')">test2</a>
+                <div class="project-description">数字化解决方案</div>
+            </div>
+            <div class="project-item">
+                <a href="#" onclick="openProject('test3')">test3</a>
+                <div class="project-description">企业自动化</div>
+            </div>
+            <div class="project-item">
+                <a href="#" onclick="openProject('test4')">test4</a>
+                <div class="project-description">移动应用开发</div>
+            </div>
+            <div class="project-item">
+                <a href="#" onclick="openProject('test5')">test5</a>
+                <div class="project-description">AI智能系统</div>
+            </div>
+            <div class="project-item">
+                <a href="#" onclick="openProject('test6')">test6</a>
+                <div class="project-description">数据分析平台</div>
+            </div>
+            <div class="project-item">
+                <a href="#" onclick="openProject('test7')">test7</a>
+                <div class="project-description">云计算服务</div>
+            </div>
+            <div class="project-item">
+                <a href="#" onclick="openProject('test8')">test8</a>
+                <div class="project-description">区块链应用</div>
+            </div>
+            <!-- 第二组项目 - 重复内容实现无缝循环 -->
+            <div class="project-item">
+                <a href="#" onclick="openProject('test1')">test1</a>
+                <div class="project-description">前端开发项目</div>
+            </div>
+            <div class="project-item">
+                <a href="#" onclick="openProject('test2')">test2</a>
+                <div class="project-description">数字化解决方案</div>
+            </div>
+            <div class="project-item">
+                <a href="#" onclick="openProject('test3')">test3</a>
+                <div class="project-description">企业自动化</div>
+            </div>
+            <div class="project-item">
+                <a href="#" onclick="openProject('test4')">test4</a>
+                <div class="project-description">移动应用开发</div>
+            </div>
+            <div class="project-item">
+                <a href="#" onclick="openProject('test5')">test5</a>
+                <div class="project-description">AI智能系统</div>
+            </div>
+            <div class="project-item">
+                <a href="#" onclick="openProject('test6')">test6</a>
+                <div class="project-description">数据分析平台</div>
+            </div>
+            <div class="project-item">
+                <a href="#" onclick="openProject('test7')">test7</a>
+                <div class="project-description">云计算服务</div>
+            </div>
+            <div class="project-item">
+                <a href="#" onclick="openProject('test8')">test8</a>
+                <div class="project-description">区块链应用</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Markdown内容显示区域 -->
+    <div class="markdown-display" id="markdown-display">
+        <button class="markdown-close-btn" onclick="closeMarkdownDisplay()">&times;</button>
+        <div class="markdown-content" id="markdown-content">
+            <!-- markdown内容将动态加载到这里 -->
+        </div>
+    </div>
+
+    <!-- Three.js 库 -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        // 全局变量
+        let isZoomedIn = false;
+        let moon3DInstance = null;
+        let backgroundMusic = null;
+        let isMusicPlaying = false;
+        
+        // 音乐控制功能
+        function initMusic() {
+            backgroundMusic = document.getElementById('background-music');
+            const musicIcon = document.getElementById('music-icon');
+            
+            // 设置音量
+            backgroundMusic.volume = 0.3;
+            
+            // 尝试自动播放
+            const playPromise = backgroundMusic.play();
+            
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    // 自动播放成功
+                    isMusicPlaying = true;
+                    musicIcon.textContent = '⏹︎';
+                    console.log('音乐自动播放成功');
+                }).catch((error) => {
+                    // 自动播放被阻止（现代浏览器的安全策略）
+                    console.log('自动播放被阻止，需要用户交互:', error);
+                    isMusicPlaying = false;
+                    musicIcon.textContent = '▶︎';
+                });
+            }
+            
+            // 监听音频事件
+            backgroundMusic.addEventListener('ended', () => {
+                // 由于设置了loop属性，这个事件通常不会触发
+                console.log('音乐播放结束');
+            });
+            
+            backgroundMusic.addEventListener('error', (e) => {
+                console.error('音乐加载失败:', e);
+                musicIcon.textContent = '❌';
+            });
+        }
+        
+        // 切换音乐播放/暂停
+        function toggleMusic() {
+            const musicIcon = document.getElementById('music-icon');
+            
+            if (!backgroundMusic) {
+                console.error('音频元素未找到');
+                return;
+            }
+            
+            if (isMusicPlaying) {
+                // 暂停音乐
+                backgroundMusic.pause();
+                isMusicPlaying = false;
+                musicIcon.textContent = '▶︎';
+            } else {
+                // 播放音乐
+                const playPromise = backgroundMusic.play();
+                
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        isMusicPlaying = true;
+                        musicIcon.textContent = '⏹︎';
+                    }).catch((error) => {
+                        console.error('播放失败:', error);
+                        musicIcon.textContent = '❌';
+                    });
+                }
+            }
+        }
+        
+        // 月球点击处理
+        function handleMoonClick() {
+            const moonCanvas = document.getElementById('moon-canvas');
+            const projectList = document.getElementById('project-list');
+            const markdownDisplay = document.getElementById('markdown-display');
+            
+            // 如果markdown显示区域是可见的，优先关闭它并回到首页
+            if (markdownDisplay.classList.contains('visible')) {
+                markdownDisplay.classList.remove('visible');
+                // 延迟一点时间再恢复到首页状态，确保动画流畅
+                setTimeout(() => {
+                    moonCanvas.classList.remove('zoomed');
+                    projectList.classList.remove('visible');
+                    isZoomedIn = false;
+                    
+                    if (moon3DInstance) {
+                        moon3DInstance.zoomOut();
+                    }
+                }, 300);
+                return;
+            }
+            
+            if (!isZoomedIn) {
+                // 放大月球并移动到左侧
+                moonCanvas.classList.add('zoomed');
+                projectList.classList.add('visible');
+                isZoomedIn = true;
+                
+                // 调整月球相机以显示更多细节
+                if (moon3DInstance) {
+                    moon3DInstance.zoomIn();
+                }
+            } else {
+                // 恢复原始状态
+                moonCanvas.classList.remove('zoomed');
+                projectList.classList.remove('visible');
+                isZoomedIn = false;
+                
+                if (moon3DInstance) {
+                    moon3DInstance.zoomOut();
+                }
+            }
+        }
+
+        // 项目点击处理
+        function openProject(projectName) {
+            loadMarkdownContent(projectName);
+        }
+        
+        // 加载并显示Markdown内容
+        async function loadMarkdownContent(projectName) {
+            const projectList = document.getElementById('project-list');
+            const markdownDisplay = document.getElementById('markdown-display');
+            const markdownContent = document.getElementById('markdown-content');
+            
+            // 隐藏项目列表
+            projectList.classList.remove('visible');
+            
+            // 显示加载状态
+            markdownContent.innerHTML = '<p>加载中...</p>';
+            markdownDisplay.classList.add('visible');
+            
+            try {
+                // 构建markdown文件路径
+                const workFolder = projectName.replace('test', 'work');
+                const markdownPath = `work/${workFolder}/index.md`;
+                
+                // 模拟加载markdown内容（实际项目中需要服务器支持）
+                const content = await loadMarkdownFromPath(projectName);
+                
+                // 将markdown转换为HTML并显示
+                const htmlContent = parseMarkdownToHTML(content);
+                markdownContent.innerHTML = htmlContent;
+                
+            } catch (error) {
+                console.error('加载markdown内容失败:', error);
+                markdownContent.innerHTML = `
+                    <h1>${projectName.toUpperCase()} 项目</h1>
+                    <p>抱歉，无法加载项目详情。</p>
+                    <p>这是一个示例项目，展示了现代Web开发技术。</p>
+                `;
+            }
+        }
+        
+        // 模拟从本地文件加载markdown内容
+        async function loadMarkdownFromPath(projectName) {
+            // 由于浏览器安全限制，我们使用预定义的内容
+            const markdownContents = {
+                'test1': `# Test1 项目详情
+
+## 项目简介
+这是 Test1 项目的详细介绍。这个项目展示了现代Web技术的应用。
+
+## 主要功能
+- 响应式设计
+- 用户交互优化
+- 性能优化
+
+## 技术栈
+- HTML5
+- CSS3
+- JavaScript ES6+
+- Three.js
+
+## 开发进度
+- [x] 基础框架搭建
+- [x] 核心功能实现
+- [ ] 测试优化
+- [ ] 部署上线`,
+
+                'test2': `# Test2 项目详情
+
+## 项目概述
+Test2 是一个创新的数字化解决方案，专注于提升用户体验。
+
+## 核心特性
+- 智能算法优化
+- 实时数据处理
+- 跨平台兼容性
+
+## 架构设计
+- 前端：React + TypeScript
+- 后端：Node.js + Express
+- 数据库：MongoDB
+
+## 项目亮点
+- 🚀 高性能渲染
+- 🎨 精美的UI设计
+- 🔧 模块化架构
+- 📱 移动端适配`,
+
+                'test3': `# Test3 项目详情
+
+## 项目背景
+Test3 致力于解决现代企业数字化转型中的关键问题。
+
+## 解决方案
+- 自动化工作流程
+- 数据可视化分析
+- 云端集成服务
+
+## 技术实现
+\`\`\`javascript
+// 核心算法示例
+function optimizePerformance(data) {
+    return data.filter(item => item.priority > 0)
+               .sort((a, b) => b.score - a.score);
+}
+\`\`\`
+
+## 成果展示
+- 效率提升 60%
+- 成本降低 40%
+- 用户满意度 95%`,
+
+                'test4': `# Test4 移动应用开发
+
+## 应用概述
+专注于移动端用户体验的跨平台应用开发项目。
+
+## 核心功能
+- 离线数据同步
+- 实时推送通知
+- 地理位置服务
+- 社交分享功能
+
+## 技术选型
+- React Native
+- Redux状态管理
+- Firebase后端服务
+- 原生模块集成
+
+## 性能优化
+- 图片懒加载
+- 内存管理优化
+- 网络请求缓存
+- 启动时间优化`,
+
+                'test5': `# Test5 AI智能系统
+
+## 系统介绍
+基于机器学习的智能决策支持系统。
+
+## AI能力
+- 自然语言处理
+- 图像识别分析
+- 预测性分析
+- 智能推荐算法
+
+## 技术架构
+- Python + TensorFlow
+- 微服务架构
+- Docker容器化
+- Kubernetes编排
+
+## 应用场景
+- 智能客服系统
+- 内容推荐引擎
+- 风险预警系统
+- 自动化决策支持`,
+
+                'test6': `# Test6 数据分析平台
+
+## 平台功能
+企业级数据分析和可视化平台。
+
+## 核心模块
+- 数据采集引擎
+- ETL数据处理
+- 实时计算分析
+- 可视化仪表板
+
+## 技术栈
+- Apache Spark
+- Elasticsearch
+- D3.js可视化
+- Redis缓存
+
+## 业务价值
+- 实时业务监控
+- 数据驱动决策
+- 性能指标分析
+- 趋势预测模型`,
+
+                'test7': `# Test7 云计算服务
+
+## 服务概述
+面向企业的一站式云计算解决方案。
+
+## 服务内容
+- 云主机租赁
+- 容器化部署
+- 负载均衡
+- 自动扩缩容
+
+## 技术基础
+- AWS/Azure云平台
+- Terraform基础设施即代码
+- CI/CD自动化部署
+- 监控告警系统
+
+## 优势特点
+- 99.9%可用性保证
+- 弹性资源分配
+- 成本优化建议
+- 7x24技术支持`,
+
+                'test8': `# Test8 区块链应用
+
+## 应用背景
+基于区块链技术的去中心化应用开发。
+
+## 核心特性
+- 智能合约开发
+- 数字资产管理
+- 去中心化身份认证
+- 跨链互操作性
+
+## 技术实现
+- Ethereum/Polygon网络
+- Solidity智能合约
+- Web3.js前端集成
+- IPFS分布式存储
+
+## 应用场景
+- 数字货币交易
+- NFT艺术品平台
+- 供应链追溯
+- 去中心化金融(DeFi)`
+            };
+            
+            return markdownContents[projectName] || `# ${projectName.toUpperCase()}项目\n\n项目详情开发中...`;
+        }
+        
+        // 简单的Markdown到HTML转换器
+        function parseMarkdownToHTML(markdown) {
+            let html = markdown;
+            
+            // 转换标题
+            html = html.replace(/^### (.*$)/gm, '<h3>$1</h3>');
+            html = html.replace(/^## (.*$)/gm, '<h2>$1</h2>');
+            html = html.replace(/^# (.*$)/gm, '<h1>$1</h1>');
+            
+            // 转换代码块
+            html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
+            
+            // 转换行内代码
+            html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+            
+            // 转换列表
+            html = html.replace(/^- (.*$)/gm, '<li>$1</li>');
+            html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+            
+            // 转换复选框列表
+            html = html.replace(/- \[x\] (.*$)/gm, '<li>✓ $1</li>');
+            html = html.replace(/- \[ \] (.*$)/gm, '<li>○ $1</li>');
+            
+            // 转换段落
+            html = html.replace(/^(?!<[h|u|p|l])(.+)$/gm, '<p>$1</p>');
+            
+            // 清理多余的空段落
+            html = html.replace(/<p><\/p>/g, '');
+            
+            return html;
+        }
+        
+        // 关闭Markdown显示区域
+        function closeMarkdownDisplay() {
+            const projectList = document.getElementById('project-list');
+            const markdownDisplay = document.getElementById('markdown-display');
+            
+            // 隐藏markdown显示区域
+            markdownDisplay.classList.remove('visible');
+            
+            // 延迟显示项目列表，创建平滑过渡
+            setTimeout(() => {
+                projectList.classList.add('visible');
+            }, 300);
+        }
+        
+        // 初始化Markdown显示区域的滚动功能
+        function initMarkdownScroll() {
+            const markdownDisplay = document.getElementById('markdown-display');
+            
+            // 添加滚轮事件处理
+            markdownDisplay.addEventListener('wheel', (event) => {
+                // 只有当markdown显示区域可见时才处理滚轮事件
+                if (!markdownDisplay.classList.contains('visible')) return;
+                
+                event.preventDefault();
+                event.stopPropagation();
+                
+                // 获取当前滚动位置
+                const currentScrollTop = markdownDisplay.scrollTop;
+                const scrollHeight = markdownDisplay.scrollHeight;
+                const clientHeight = markdownDisplay.clientHeight;
+                
+                // 计算滚动增量 (调整滚动速度)
+                const scrollDelta = event.deltaY * 0.8;
+                
+                // 计算新的滚动位置
+                let newScrollTop = currentScrollTop + scrollDelta;
+                
+                // 确保滚动位置在有效范围内
+                newScrollTop = Math.max(0, Math.min(newScrollTop, scrollHeight - clientHeight));
+                
+                // 应用新的滚动位置
+                markdownDisplay.scrollTop = newScrollTop;
+                
+            }, { passive: false });
+            
+            // 阻止在markdown区域内的其他滚轮事件冒泡
+            markdownDisplay.addEventListener('mouseenter', () => {
+                // 当鼠标进入markdown区域时，暂时禁用星空滚轮控制
+                const starfield = window.starfieldInstance;
+                if (starfield) {
+                    starfield.markdownScrollActive = true;
+                }
+            });
+            
+            markdownDisplay.addEventListener('mouseleave', () => {
+                // 当鼠标离开markdown区域时，重新启用星空滚轮控制
+                const starfield = window.starfieldInstance;
+                if (starfield) {
+                    starfield.markdownScrollActive = false;
+                }
+            });
+        }
+
+        // 项目列表鼠标滚轮控制
+        function initProjectListScroll() {
+            const projectList = document.getElementById('project-list');
+            const projectListContent = document.querySelector('.project-list-content');
+            
+            // 自动复制第一组项目到第二组，确保完全同步
+            function syncProjectItems() {
+                const allItems = projectListContent.querySelectorAll('.project-item');
+                const firstGroupItems = Array.from(allItems).slice(0, allItems.length / 2);
+                const secondGroupItems = Array.from(allItems).slice(allItems.length / 2);
+                
+                // 如果数量不对或内容不同，重新生成
+                if (firstGroupItems.length !== secondGroupItems.length || 
+                    firstGroupItems.some((item, index) => item.innerHTML !== secondGroupItems[index].innerHTML)) {
+                    
+                    // 移除所有第二组项目
+                    secondGroupItems.forEach(item => item.remove());
+                    
+                    // 复制第一组项目
+                    firstGroupItems.forEach(item => {
+                        const clone = item.cloneNode(true);
+                        projectListContent.appendChild(clone);
+                    });
+                }
+            }
+            
+            // 初始化时同步项目
+            syncProjectItems();
+            
+            let scrollPosition = 0;
+            let animationFrame;
+            let lastTime = 0;
+            let userScrolling = false; // 标记用户是否正在手动滚动
+            let userScrollTimeout; // 用户滚动超时定时器
+
+            // 重新计算内容高度（因为可能有新项目）
+            function getContentHeight() {
+                return projectListContent.scrollHeight / 2;
+            }
+
+            // 平滑自动滚动
+            function autoScroll(currentTime) {
+                if (!lastTime) lastTime = currentTime;
+                const deltaTime = currentTime - lastTime;
+                lastTime = currentTime;
+                
+                // 只有在项目列表可见且用户没有主动滚动时才自动滚动
+                if (!userScrolling && projectList.classList.contains('visible')) {
+                    // 使用时间差来保证平滑滚动，不依赖于帧率
+                    const scrollSpeed = 50; // 像素每秒
+                    scrollPosition += (scrollSpeed * deltaTime) / 1000;
+                    
+                    const contentHeight = getContentHeight();
+                    
+                    // 无缝循环
+                    if (scrollPosition >= contentHeight) {
+                        scrollPosition = scrollPosition % contentHeight;
+                    }
+                    
+                    projectListContent.style.transform = `translateY(-${scrollPosition}px)`;
+                }
+                
+                animationFrame = requestAnimationFrame(autoScroll);
+            }
+
+            // 启动自动滚动
+            autoScroll(0);
+
+            // 鼠标滚轮事件 - 只在滚轮使用时才影响滚动
+            projectList.addEventListener('wheel', (event) => {
+                if (!projectList.classList.contains('visible')) return;
+                
+                event.preventDefault();
+                
+                // 标记用户正在滚动
+                userScrolling = true;
+                
+                // 清除之前的超时定时器
+                if (userScrollTimeout) {
+                    clearTimeout(userScrollTimeout);
+                }
+                
+                const contentHeight = getContentHeight();
+                scrollPosition += event.deltaY * 0.5;
+
+                // 无缝循环处理
+                if (scrollPosition >= contentHeight) {
+                    scrollPosition = scrollPosition % contentHeight;
+                } else if (scrollPosition < 0) {
+                    scrollPosition = contentHeight + (scrollPosition % contentHeight);
+                }
+                
+                projectListContent.style.transform = `translateY(-${scrollPosition}px)`;
+                lastTime = 0; // 重置时间，避免滚轮后的跳跃
+                
+                // 设置超时，2秒后恢复自动滚动
+                userScrollTimeout = setTimeout(() => {
+                    userScrolling = false;
+                    lastTime = 0; // 重置时间以平滑恢复自动滚动
+                }, 2000);
+                
+            }, { passive: false });
+            
+            // 暴露同步函数，方便添加新项目时调用
+            window.syncProjectList = syncProjectItems;
+        }
+
+        // 3D月球类
+        class Moon3D {
+            constructor() {
+                this.scene = new THREE.Scene();
+                this.camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
+                this.renderer = new THREE.WebGLRenderer({antialias: true, alpha: true});
+                this.renderer.setSize(300, 300);
+                this.renderer.setClearColor(0x000000, 0);
+                
+                const container = document.getElementById('moon-canvas');
+                container.appendChild(this.renderer.domElement);
+                
+                // 添加点击事件
+                container.addEventListener('click', handleMoonClick);
+
+                this.setupLighting();
+                this.createMoon();
+                this.setupCamera();
+                this.animate();
+                
+                // 保存实例引用
+                moon3DInstance = this;
+            }
+            
+            setupLighting() {
+                // 主光源 - 模拟太阳光，更真实的月球照明
+                const directionalLight = new THREE.DirectionalLight(0xfff8e1, 2.0);
+                directionalLight.position.set(8, 3, 8);
+                directionalLight.castShadow = false; // 月球不需要阴影
+                this.scene.add(directionalLight);
+                
+                // 环境光 - 模拟地球反射光
+                const ambientLight = new THREE.AmbientLight(0x2c2c54, 0.15);
+                this.scene.add(ambientLight);
+                
+                // 补充光源 - 模拟来自地球的微弱蓝光
+                const earthLight = new THREE.DirectionalLight(0x4488ff, 0.1);
+                earthLight.position.set(-5, -2, 3);
+                this.scene.add(earthLight);
+            }
+            
+            createMoon() {
+                const geometry = new THREE.SphereGeometry(2, 64, 64);
+                
+                // 创建月球材质 - 使用更真实的设置
+                const material = new THREE.MeshLambertMaterial({
+                    color: 0xffffff,
+                    transparent: false
+                });
+                
+                // 立即创建程序化纹理，确保月球马上可见
+                this.createProceduralTexture(material);
+                
+                // 创建月球网格并添加到场景
+                this.moon = new THREE.Mesh(geometry, material);
+                this.scene.add(this.moon);
+                
+                // 在后台异步加载高质量纹理
+                this.loadHighQualityTextures(material);
+            }
+            
+            loadHighQualityTextures(material) {
+                const textureLoader = new THREE.TextureLoader();
+                
+                // 设置较短的超时时间，避免长时间等待
+                const loadWithTimeout = (url, timeout = 3000) => {
+                    return new Promise((resolve, reject) => {
+                        const timer = setTimeout(() => {
+                            reject(new Error('Texture load timeout'));
+                        }, timeout);
+                        
+                        textureLoader.load(
+                            url,
+                            (texture) => {
+                                clearTimeout(timer);
+                                resolve(texture);
+                            },
+                            undefined,
+                            (error) => {
+                                clearTimeout(timer);
+                                reject(error);
+                            }
+                        );
+                    });
+                };
+                
+                // 尝试加载多个纹理源，使用第一个成功的
+                const textureUrls = [
+                    'https://threejs.org/examples/textures/planets/moon_1024.jpg',
+                    'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/moon_1024.jpg'
+                ];
+                
+                // 并行尝试所有纹理源
+                Promise.any(textureUrls.map(url => loadWithTimeout(url, 2000)))
+                    .then((texture) => {
+                        // 成功加载纹理后替换程序化纹理
+                        texture.wrapS = THREE.RepeatWrapping;
+                        texture.wrapT = THREE.ClampToEdgeWrapping;
+                        texture.flipY = false;
+                        material.map = texture;
+                        material.needsUpdate = true;
+                        console.log('高质量月球纹理加载成功');
+                    })
+                    .catch(() => {
+                        console.log('使用程序化月球纹理 - 网络纹理加载失败');
+                        // 保持使用程序化纹理，不做任何操作
+                    });
+                
+                // 异步尝试加载法线贴图
+                loadWithTimeout('https://threejs.org/examples/textures/planets/moon_normal.jpg', 2000)
+                    .then((normalTexture) => {
+                        normalTexture.wrapS = THREE.RepeatWrapping;
+                        normalTexture.wrapT = THREE.ClampToEdgeWrapping;
+                        material.normalMap = normalTexture;
+                        material.normalScale = new THREE.Vector2(0.3, 0.3);
+                        material.needsUpdate = true;
+                        console.log('月球法线贴图加载成功');
+                    })
+                    .catch(() => {
+                        // 法线贴图加载失败，不影响主要显示
+                    });
+            }
+            
+            createProceduralTexture(material) {
+                // 创建更真实的程序化月球纹理
+                const canvas = document.createElement('canvas');
+                canvas.width = 1024;
+                canvas.height = 512; // equirectangular 比例 2:1
+                const context = canvas.getContext('2d');
+                
+                // 创建基础月球颜色渐变
+                const gradient = context.createLinearGradient(0, 0, 0, 512);
+                gradient.addColorStop(0, '#c4c4c4');
+                gradient.addColorStop(0.3, '#a8a8a8');
+                gradient.addColorStop(0.7, '#909090');
+                gradient.addColorStop(1, '#787878');
+                
+                context.fillStyle = gradient;
+                context.fillRect(0, 0, 1024, 512);
+                
+                // 添加噪声纹理
+                const imageData = context.getImageData(0, 0, 1024, 512);
+                const data = imageData.data;
+                
+                for (let i = 0; i < data.length; i += 4) {
+                    const noise = (Math.random() - 0.5) * 30;
+                    data[i] = Math.max(0, Math.min(255, data[i] + noise));     // R
+                    data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + noise)); // G
+                    data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + noise)); // B
+                }
+                
+                context.putImageData(imageData, 0, 0);
+                
+                // 添加大型陨石坑 - maria (月海)
+                const craters = [
+                    {x: 200, y: 200, r: 80, darkness: 0.3},
+                    {x: 600, y: 150, r: 60, darkness: 0.25},
+                    {x: 800, y: 300, r: 90, darkness: 0.35},
+                    {x: 150, y: 350, r: 50, darkness: 0.2},
+                    {x: 750, y: 100, r: 70, darkness: 0.28}
+                ];
+                
+                craters.forEach(crater => {
+                    const gradient = context.createRadialGradient(
+                        crater.x, crater.y, crater.r * 0.3,
+                        crater.x, crater.y, crater.r
+                    );
+                    gradient.addColorStop(0, `rgba(40, 40, 40, ${crater.darkness})`);
+                    gradient.addColorStop(0.7, `rgba(60, 60, 60, ${crater.darkness * 0.7})`);
+                    gradient.addColorStop(1, 'rgba(80, 80, 80, 0)');
+                    
+                    context.fillStyle = gradient;
+                    context.beginPath();
+                    context.arc(crater.x, crater.y, crater.r, 0, Math.PI * 2);
+                    context.fill();
+                });
+                
+                // 添加小型陨石坑
+                for (let i = 0; i < 100; i++) {
+                    const x = Math.random() * 1024;
+                    const y = Math.random() * 512;
+                    const radius = Math.random() * 15 + 3;
+                    const darkness = Math.random() * 0.15 + 0.1;
+                    
+                    const gradient = context.createRadialGradient(
+                        x, y, 0,
+                        x, y, radius
+                    );
+                    gradient.addColorStop(0, `rgba(30, 30, 30, ${darkness})`);
+                    gradient.addColorStop(0.6, `rgba(50, 50, 50, ${darkness * 0.5})`);
+                    gradient.addColorStop(1, 'rgba(70, 70, 70, 0)');
+                    
+                    context.fillStyle = gradient;
+                    context.beginPath();
+                    context.arc(x, y, radius, 0, Math.PI * 2);
+                    context.fill();
+                }
+                
+                // 添加高地亮斑
+                for (let i = 0; i < 50; i++) {
+                    const x = Math.random() * 1024;
+                    const y = Math.random() * 512;
+                    const radius = Math.random() * 20 + 5;
+                    const brightness = Math.random() * 0.1 + 0.05;
+                    
+                    const gradient = context.createRadialGradient(
+                        x, y, 0,
+                        x, y, radius
+                    );
+                    gradient.addColorStop(0, `rgba(255, 255, 255, ${brightness})`);
+                    gradient.addColorStop(0.5, `rgba(255, 255, 255, ${brightness * 0.5})`);
+                    gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                    
+                    context.fillStyle = gradient;
+                    context.beginPath();
+                    context.arc(x, y, radius, 0, Math.PI * 2);
+                    context.fill();
+                }
+                
+                // 创建纹理
+                const texture = new THREE.CanvasTexture(canvas);
+                texture.wrapS = THREE.RepeatWrapping;
+                texture.wrapT = THREE.ClampToEdgeWrapping;
+                texture.flipY = false; // 重要：equirectangular映射不需要翻转Y
+                
+                material.map = texture;
+                material.needsUpdate = true;
+            }
+            
+            setupCamera() {
+                this.camera.position.z = 6;
+            }
+            
+            zoomIn() {
+                // 不需要改变相机和渲染器尺寸，只是CSS变换
+            }
+            
+            zoomOut() {
+                // 不需要改变相机和渲染器尺寸，只是CSS变换
+            }
+            
+            animate() {
+                requestAnimationFrame(() => this.animate());
+                if (this.moon) {
+                    this.moon.rotation.y += 0.002;
+                    this.moon.rotation.x += 0.0005;
+                }
+                this.renderer.render(this.scene, this.camera);
+            }
+        }
+
+        class Star {
+            constructor(x, y, z) {
+                this.x = x;
+                this.y = y;
+                this.z = z;
+                this.prevX = 0;
+                this.prevY = 0;
+                this.opacity = 1;
+                this.size = Math.random() * 2 + 0.5;
+                this.color = this.generateStarColor();
+            }
+            
+            generateStarColor() {
+                const colors = [
+                    '#ffffff',  // 白色
+                    '#ffffcc',  // 淡黄色
+                    '#ccccff',  // 淡蓝色
+                    '#ffcccc',  // 淡红色
+                    '#ccffcc',  // 淡绿色
+                    '#ffccff'   // 淡紫色
+                ];
+                return colors[Math.floor(Math.random() * colors.length)];
+            }
+            
+            update(speed, mouseX, mouseY) {
+                // 保存上一帧位置用于绘制拖尾
+                this.prevX = this.screenX || 0;
+                this.prevY = this.screenY || 0;
+                
+                // 根据速度移动星星
+                this.z -= speed;
+                
+                // 如果星星移动到摄像机后面，重新生成
+                if (this.z <= 0) {
+                    this.z = 1000;
+                    this.x = (Math.random() - 0.5) * 2000;
+                    this.y = (Math.random() - 0.5) * 2000;
+                    this.color = this.generateStarColor();
+                }
+                
+                // 3D透视投影转换为2D屏幕坐标 - 减慢鼠标影响
+                const perspective = 800;
+                // 获取月球当前位置作为星空原点
+                const moonElement = document.getElementById('moon-canvas');
+                const moonRect = moonElement.getBoundingClientRect();
+                const moonCenterX = moonRect.left + moonRect.width / 2;
+                const moonCenterY = moonRect.top + moonRect.height / 2;
+                
+                this.screenX = (this.x / this.z) * perspective + moonCenterX + mouseX * 0.2;
+                this.screenY = (this.y / this.z) * perspective + moonCenterY + mouseY * 0.2;
+                
+                // 计算透视深度和透明度
+                this.opacity = Math.max(0, 1 - this.z / 1000);
+                this.projectedSize = this.size * (1 - this.z / 1000) + 0.5;
+            }
+            
+            draw(ctx, speed) {
+                if (this.screenX < -50 || this.screenX > canvas.width + 50 || 
+                    this.screenY < -50 || this.screenY > canvas.height + 50) {
+                    return;
+                }
+                
+                // 绘制拖尾效果（当速度较快时）
+                if (speed > 3 && this.prevX && this.prevY) {
+                    const trailLength = Math.min(speed * 2, 20);
+                    const gradient = ctx.createLinearGradient(
+                        this.prevX, this.prevY,
+                        this.screenX, this.screenY
+                    );
+                    
+                    gradient.addColorStop(0, `rgba(255, 255, 255, 0)`);
+                    gradient.addColorStop(1, `rgba(255, 255, 255, ${this.opacity * 0.6})`);
+                    
+                    ctx.strokeStyle = gradient;
+                    ctx.lineWidth = this.projectedSize;
+                    ctx.beginPath();
+                    ctx.moveTo(this.prevX, this.prevY);
+                    ctx.lineTo(this.screenX, this.screenY);
+                    ctx.stroke();
+                }
+                
+                // 绘制星星本体
+                ctx.save();
+                ctx.globalAlpha = this.opacity;
+                ctx.fillStyle = this.color;
+                
+                // 绘制星星光晕
+                const glowSize = this.projectedSize * 3;
+                const glowGradient = ctx.createRadialGradient(
+                    this.screenX, this.screenY, 0,
+                    this.screenX, this.screenY, glowSize
+                );
+                glowGradient.addColorStop(0, `rgba(255, 255, 255, ${this.opacity * 0.8})`);
+                glowGradient.addColorStop(0.5, `rgba(255, 255, 255, ${this.opacity * 0.3})`);
+                glowGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                
+                ctx.fillStyle = glowGradient;
+                ctx.beginPath();
+                ctx.arc(this.screenX, this.screenY, glowSize, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 绘制星星核心
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.screenX, this.screenY, this.projectedSize, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 高速时的额外光效
+                if (speed > 5) {
+                    ctx.globalAlpha = this.opacity * 0.5;
+                    ctx.fillStyle = '#00ffff';
+                    ctx.beginPath();
+                    ctx.arc(this.screenX, this.screenY, this.projectedSize * 0.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                ctx.restore();
+            }
+        }
+
+        class Starfield {
+            constructor() {
+                this.canvas = document.getElementById('starfield');
+                this.ctx = this.canvas.getContext('2d');
+                this.stars = [];
+                this.numStars = 1500;
+                this.speed = 2;
+                this.mouseX = 0;
+                this.mouseY = 0;
+                this.isPaused = false;
+                this.targetSpeed = this.speed;
+                this.isMousePressed = false;
+                this.baseSpeed = 1;
+                this.boostSpeed = 8;
+                this.markdownScrollActive = false; // 新增：标记markdown滚动是否活跃
+                
+                this.initCanvas();
+                this.generateStars();
+                this.bindEvents();
+                this.animate();
+                
+                // 保存实例引用以便其他功能访问
+                window.starfieldInstance = this;
+            }
+            
+            initCanvas() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+            }
+            
+            generateStars() {
+                for (let i = 0; i < this.numStars; i++) {
+                    const x = (Math.random() - 0.5) * 2000;
+                    const y = (Math.random() - 0.5) * 2000;
+                    const z = Math.random() * 1000;
+                    this.stars.push(new Star(x, y, z));
+                }
+            }
+            
+            bindEvents() {
+                // 鼠标按下和松开事件
+                window.addEventListener('mousedown', (e) => {
+                    this.isMousePressed = true;
+                    this.targetSpeed = this.boostSpeed;
+                });
+                
+                window.addEventListener('mouseup', (e) => {
+                    this.isMousePressed = false;
+                    this.targetSpeed = this.baseSpeed;
+                });
+                
+                // 鼠标移动事件 - 减慢响应速度
+                window.addEventListener('mousemove', (e) => {
+                    this.mouseX = (e.clientX - window.innerWidth / 2) * 0.3;
+                    this.mouseY = (e.clientY - window.innerHeight / 2) * 0.3;
+                });
+                
+                // 滚轮事件控制基础速度
+                window.addEventListener('wheel', (e) => {
+                    // 如果markdown滚动活跃，不处理星空速度控制
+                    if (this.markdownScrollActive) {
+                        return;
+                    }
+                    
+                    // 检查鼠标是否在项目列表区域内
+                    const projectList = document.getElementById('project-list');
+                    const projectListRect = projectList.getBoundingClientRect();
+                    
+                    // 判断鼠标是否在项目列表区域内且项目列表可见
+                    const isInProjectList = projectList.classList.contains('visible') &&
+                        e.clientX >= projectListRect.left &&
+                        e.clientX <= projectListRect.right &&
+                        e.clientY >= projectListRect.top &&
+                        e.clientY <= projectListRect.bottom;
+                    
+                    // 如果鼠标在项目列表区域内，不处理星星速度控制
+                    if (isInProjectList) {
+                        return;
+                    }
+                    
+                    e.preventDefault();
+                    const delta = e.deltaY > 0 ? 0.5 : -0.5;
+                    this.baseSpeed = Math.max(0.1, Math.min(15, this.baseSpeed + delta));
+                    this.boostSpeed = Math.max(this.baseSpeed + 2, this.baseSpeed * 3);
+                    
+                    // 如果当前没有按鼠标，更新目标速度为基础速度
+                    if (!this.isMousePressed) {
+                        this.targetSpeed = this.baseSpeed;
+                    } else {
+                        this.targetSpeed = this.boostSpeed;
+                    }
+                }, { passive: false });
+                
+                // 空格键暂停
+                window.addEventListener('keydown', (e) => {
+                    if (e.code === 'Space') {
+                        e.preventDefault();
+                        this.isPaused = !this.isPaused;
+                    }
+                });
+                
+                // 窗口大小变化
+                window.addEventListener('resize', () => {
+                    this.initCanvas();
+                });
+                
+                // 防止右键菜单和鼠标离开窗口时重置状态
+                this.canvas.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                });
+                
+                // 鼠标离开窗口时重置按压状态
+                window.addEventListener('mouseleave', () => {
+                    this.isMousePressed = false;
+                    this.targetSpeed = this.baseSpeed;
+                });
+            }
+            
+            animate() {
+                if (!this.isPaused) {
+                    // 平滑速度过渡
+                    this.speed += (this.targetSpeed - this.speed) * 0.1;
+                    
+                    // 清除画布
+                    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                    
+                    // 绘制背景渐变
+                    const gradient = this.ctx.createRadialGradient(
+                        this.canvas.width / 2, this.canvas.height / 2, 0,
+                        this.canvas.width / 2, this.canvas.height / 2, 
+                        Math.max(this.canvas.width, this.canvas.height) / 2
+                    );
+                    gradient.addColorStop(0, 'rgba(26, 26, 46, 0.05)');
+                    gradient.addColorStop(1, 'rgba(0, 0, 0, 0.1)');
+                    
+                    this.ctx.fillStyle = gradient;
+                    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                    
+                    // 更新和绘制星星
+                    for (let star of this.stars) {
+                        star.update(this.speed, this.mouseX, this.mouseY);
+                        star.draw(this.ctx, this.speed);
+                    }
+                    
+                    // 高速时的屏幕效果 - 保持深蓝色背景
+                    if (this.speed > 8) {
+                        this.ctx.save();
+                        this.ctx.globalAlpha = Math.min(0.15, (this.speed - 8) * 0.01);
+                        this.ctx.fillStyle = '#001133';
+                        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                        this.ctx.restore();
+                    }
+                }
+                
+                requestAnimationFrame(() => this.animate());
+            }
+        }
+
+        // 初始化星空和月球
+        window.addEventListener('load', () => {
+            window.canvas = document.getElementById('starfield');
+            new Starfield();
+            new Moon3D();
+            initProjectListScroll();
+            initMarkdownScroll(); // 初始化markdown滚动功能
+            initMusic(); // 初始化音乐功能
+        });
+        
+        // ESC键恢复视角
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const markdownDisplay = document.getElementById('markdown-display');
+                if (markdownDisplay.classList.contains('visible')) {
+                    closeMarkdownDisplay();
+                } else if (isZoomedIn) {
+                    handleMoonClick();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
