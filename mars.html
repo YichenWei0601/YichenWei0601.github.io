@@ -18,6 +18,11 @@
             background: #000;
             overflow: hidden;
             font-family: Arial, sans-serif;
+            cursor: none;
+        }
+        
+        * {
+            cursor: none !important;
         }
         
         #starfield {
@@ -46,7 +51,7 @@
             height: 300px;
             border-radius: 50%;
             overflow: hidden;
-            cursor: pointer;
+            cursor: none !important;
             transition: all 1.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             z-index: 2;
             pointer-events: auto;
@@ -81,7 +86,7 @@
             justify-content: center;
             background: transparent;
             border: none;
-            cursor: pointer;
+            cursor: none !important;
             transition: all 0.3s ease;
             z-index: 100;
             user-select: none;
@@ -296,7 +301,7 @@
             border: none;
             color: #ffffff;
             font-size: 24px;
-            cursor: pointer;
+            cursor: none !important;
             transition: color 0.3s ease;
             z-index: 21;
         }
@@ -320,7 +325,7 @@
             background: rgba(40, 20, 20, 0.8);
             border: 2px solid rgba(255, 100, 50, 0.3);
             color: #ffffff;
-            cursor: pointer;
+            cursor: none !important;
             transition: all 0.3s ease;
             backdrop-filter: blur(10px);
             display: flex;
@@ -363,6 +368,31 @@
         .test-topic.visible {
             opacity: 1;
             visibility: visible;
+        }
+        
+        /* 自定义光标 */
+        .custom-cursor {
+            position: fixed;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            mix-blend-mode: difference;
+            transition: transform 0.1s ease;
+        }
+        
+        .custom-cursor::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 4px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
         }
     </style>
 </head>
@@ -1400,6 +1430,13 @@
                 window.addEventListener('mousemove', (e) => {
                     this.mouseX = (e.clientX - window.innerWidth / 2) * 0.3;
                     this.mouseY = (e.clientY - window.innerHeight / 2) * 0.3;
+                    
+                    // 更新自定义光标位置
+                    const cursor = document.querySelector('.custom-cursor');
+                    if (cursor) {
+                        cursor.style.left = e.clientX - 10 + 'px';
+                        cursor.style.top = e.clientY - 10 + 'px';
+                    }
                 });
                 
                 window.addEventListener('wheel', (e) => {
@@ -1501,6 +1538,13 @@
             initProjectListScroll();
             initMarkdownScroll();
             initMusic();
+            
+            // 初始化自定义光标位置
+            const cursor = document.querySelector('.custom-cursor');
+            if (cursor) {
+                cursor.style.left = window.innerWidth / 2 - 10 + 'px';
+                cursor.style.top = window.innerHeight / 2 - 10 + 'px';
+            }
         });
         
         // ESC键恢复视角
@@ -1515,5 +1559,8 @@
             }
         });
     </script>
+    
+    <!-- 自定义光标 -->
+    <div class="custom-cursor"></div>
 </body>
 </html>

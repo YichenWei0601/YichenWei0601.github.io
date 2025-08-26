@@ -20,6 +20,10 @@
             cursor: none;
         }
         
+        * {
+            cursor: none !important;
+        }
+        
         #starfield {
             display: block;
             background: radial-gradient(ellipse at center, #1a1a2e 0%, #000 100%);
@@ -44,7 +48,7 @@
                          0 0 40px rgba(255, 255, 255, 0.6),
                          0 0 60px rgba(255, 255, 255, 0.4);
             margin-bottom: 2rem;
-            cursor: pointer;
+            cursor: none !important;
             transition: all 0.3s ease;
             animation: glow 2s ease-in-out infinite alternate;
         }
@@ -144,7 +148,7 @@
             background: rgba(0, 0, 0, 0.7);
             color: white;
             font-size: 20px;
-            cursor: pointer;
+            cursor: none !important;
             transition: all 0.3s ease;
             display: flex;
             align-items: center;
@@ -278,12 +282,7 @@
     <!-- Welcome文字 -->
     <div class="welcome-container">
         <div class="welcome-text" onclick="goToMoon()">Welcome</div>
-        <div class="enter-hint">Click to Enter</div>
-        <div class="navigation-hint">
-            <div>Press 1 or M for Moon</div>
-            <div>Press 2 or R for Mars</div>
-            <div>Press 3 or V for Venus</div>
-        </div>
+        <div class="enter-hint">Press any key</div>
     </div>
     
     <!-- 音乐播放器 -->
@@ -668,23 +667,8 @@
         
         // 键盘导航
         window.addEventListener('keydown', (e) => {
-            switch(e.key.toLowerCase()) {
-                case '1':
-                case 'm':
-                    goToMoon();
-                    break;
-                case '2':
-                case 'r':
-                    goToMars();
-                    break;
-                case '3':
-                case 'v':
-                    goToVenus();
-                    break;
-                case 'enter':
-                    goToMoon(); // 默认进入月球页面
-                    break;
-            }
+            // 任何键都进入月球页面
+            goToMoon();
         });
         
         // 防止右键菜单
