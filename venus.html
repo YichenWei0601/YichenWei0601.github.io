@@ -1,0 +1,1688 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Venus Profile - owei</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Gugi&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Gloria+Hallelujah&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #000;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+        
+        #starfield {
+            display: block;
+            background: radial-gradient(ellipse at center, #2e2a1a 0%, #000 100%);
+            position: absolute;
+            z-index: 1;
+        }
+        
+        #venus-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none;
+        }
+        
+        #venus-canvas {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 1.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            z-index: 2;
+            pointer-events: auto;
+        }
+        
+        #venus-canvas.zoomed {
+            transform: translate(-140%, -50%) scale(1.5);
+            border-radius: 50%;
+            width: 300px;
+            height: 300px;
+            z-index: 10;
+        }
+        
+        #venus-canvas:hover {
+            filter: brightness(0.8);
+            box-shadow: 0 0 300px rgba(255, 215, 100, 0.4);
+        }
+        
+        #venus-canvas.zoomed:hover {
+            filter: brightness(1.05);
+        }
+        
+        /* 页面切换箭头 */
+        .page-nav {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 60px;
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 100;
+            user-select: none;
+        }
+        
+        .page-nav:hover {
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            transform: translateY(-50%) scale(1.1);
+        }
+        
+        .page-nav.left {
+            left: 30px;
+            border-radius: 0 20px 20px 0;
+        }
+        
+        .page-nav.right {
+            right: 30px;
+            border-radius: 20px 0 0 20px;
+        }
+        
+        .page-nav .arrow {
+            color: #ffffff;
+            font-size: 32px;
+            font-weight: bold;
+            font-family: 'Gloria Hallelujah', cursive;
+            transition: color 0.3s ease;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+        
+        .page-nav:hover .arrow {
+            color: #ffd700;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+        }
+        
+        /* 项目列表样式 */
+        .project-list {
+            position: fixed;
+            right: 10%;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 560px;
+            height: 400px;
+            overflow: hidden;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.8s ease;
+            z-index: 15;
+            pointer-events: none;
+        }
+        
+        .project-list.visible {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+        
+        .project-list-content {
+            height: 200%;
+            opacity: 0;
+            transition: opacity 1.5s ease 0.5s;
+        }
+        
+        .project-list.visible .project-list-content {
+            opacity: 1;
+        }
+        
+        .project-item {
+            margin: 15px 0;
+            padding: 0;
+            background: transparent;
+            border: none;
+            transition: all 0.3s ease;
+        }
+        
+        .project-item a {
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 28px;
+            font-weight: 400;
+            font-family: 'Gugi', sans-serif;
+            display: block;
+            transition: color 0.3s ease;
+        }
+        
+        .project-item a:hover {
+            color: #ffd700;
+        }
+        
+        .project-description {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 18px;
+            font-family: 'Gugi', sans-serif;
+            margin-top: 5px;
+        }
+        
+        /* Markdown内容显示区域 */
+        .markdown-display {
+            position: fixed;
+            right: 5%;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 650px;
+            height: 500px;
+            background: rgba(40, 35, 20, 0.85);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            border-radius: 12px;
+            padding: 30px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.8s ease;
+            z-index: 20;
+            pointer-events: none;
+            backdrop-filter: blur(10px);
+            overflow-y: auto;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .markdown-display.visible {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+        
+        .markdown-display::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .markdown-display::-webkit-scrollbar-track {
+            background: rgba(255, 215, 0, 0.1);
+            border-radius: 3px;
+        }
+        
+        .markdown-display::-webkit-scrollbar-thumb {
+            background: rgba(255, 215, 0, 0.3);
+            border-radius: 3px;
+        }
+        
+        .markdown-display::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 215, 0, 0.5);
+        }
+        
+        .markdown-content {
+            color: #ffffff;
+            font-family: 'Gugi', sans-serif;
+            line-height: 1.6;
+        }
+        
+        .markdown-content h1 {
+            color: #ffd700;
+            font-size: 32px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ffd700;
+            padding-bottom: 10px;
+        }
+        
+        .markdown-content h2 {
+            color: #ffffff;
+            font-size: 24px;
+            margin: 25px 0 15px 0;
+        }
+        
+        .markdown-content h3 {
+            color: #cccccc;
+            font-size: 20px;
+            margin: 20px 0 10px 0;
+        }
+        
+        .markdown-content p {
+            margin-bottom: 15px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .markdown-content ul, .markdown-content ol {
+            margin: 15px 0;
+            padding-left: 25px;
+        }
+        
+        .markdown-content li {
+            margin-bottom: 8px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .markdown-content code {
+            background: rgba(255, 215, 0, 0.1);
+            color: #ffd700;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .markdown-content pre {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            overflow-x: auto;
+        }
+        
+        .markdown-content pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        .markdown-close-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: #ffffff;
+            font-size: 24px;
+            cursor: pointer;
+            transition: color 0.3s ease;
+            z-index: 21;
+        }
+        
+        .markdown-close-btn:hover {
+            color: #ffd700;
+        }
+        
+        /* 音乐控制按钮样式 */
+        .music-control {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            z-index: 100;
+        }
+        
+        #music-toggle {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(40, 35, 20, 0.8);
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            color: #ffffff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        
+        #music-toggle:hover {
+            background: rgba(255, 215, 0, 0.2);
+            border-color: #ffd700;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+            transform: scale(1.1);
+        }
+        
+        #music-icon {
+            line-height: 1;
+            display: block;
+        }
+        
+        /* Test Topic 标题样式 */
+        .test-topic {
+            position: fixed;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Gloria Hallelujah', cursive;
+            font-size: 48px;
+            color: #ffd700;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.8s ease;
+            z-index: 25;
+            pointer-events: none;
+            user-select: none;
+        }
+        
+        .test-topic.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="starfield"></canvas>
+    
+    <!-- 金星容器 -->
+    <div id="venus-container">
+        <div id="venus-canvas"></div>
+    </div>
+
+    <!-- 页面导航箭头 -->
+    <div class="page-nav left" onclick="switchToJupiter()">
+        <div class="arrow">&lt;</div>
+    </div>
+    <div class="page-nav right" onclick="switchToMoon()">
+        <div class="arrow">&gt;</div>
+    </div>
+
+    <!-- 音频元素 -->
+    <audio id="background-music" loop preload="auto">
+        <source src="music/Horizon_daft_punk.mp3" type="audio/mpeg">
+        您的浏览器不支持音频播放。
+    </audio>
+
+    <!-- 音乐控制按钮 -->
+    <div class="music-control" id="music-control">
+        <button id="music-toggle" onclick="toggleMusic()">
+            <span id="music-icon">⏹︎️</span>
+        </button>
+    </div>
+
+    <!-- Test Topic 标题 -->
+    <div class="test-topic" id="test-topic">Test Topic</div>
+
+    <!-- 项目列表 -->
+    <div class="project-list" id="project-list">
+        <div class="project-list-content">
+            <!-- Venus 项目列表 -->
+            <div class="project-item">
+                <a href="#" onclick="openProject('venus1')">Venus Exploration</a>
+                <div class="project-description">金星探索任务</div>
+            </div>
+            <div class="project-item">
+                <a href="#" onclick="openProject('venus2')">Atmospheric Research</a>
+                <div class="project-description">大气层研究</div>
+            </div>
+            <div class="project-item">
+                <a href="#" onclick="openProject('venus3')">Surface Analysis</a>
+                <div class="project-description">表面分析</div>
+            </div>
+            <div class="project-item">
+                <a href="#" onclick="openProject('venus4')">Terraforming</a>
+                <div class="project-description">地球化改造</div>
+            </div>
+            <div class="project-item">
+                <a href="#" onclick="openProject('venus5')">Cloud Cities</a>
+                <div class="project-description">云层城市</div>
+            </div>
+            <div class="project-item">
+                <a href="#" onclick="openProject('venus6')">Mining Operations</a>
+                <div class="project-description">采矿作业</div>
+            </div>
+            <div class="project-item">
+                <a href="#" onclick="openProject('venus7')">Climate Study</a>
+                <div class="project-description">气候研究</div>
+            </div>
+            <div class="project-item">
+                <a href="#" onclick="openProject('venus8')">Future Missions</a>
+                <div class="project-description">未来任务</div>
+            </div>
+            <!-- 重复内容实现无缝循环 -->
+            <div class="project-item">
+                <a href="#" onclick="openProject('venus1')">Venus Exploration</a>
+                <div class="project-description">金星探索任务</div>
+            </div>
+            <div class="project-item">
+                <a href="#" onclick="openProject('venus2')">Atmospheric Research</a>
+                <div class="project-description">大气层研究</div>
+            </div>
+            <div class="project-item">
+                <a href="#" onclick="openProject('venus3')">Surface Analysis</a>
+                <div class="project-description">表面分析</div>
+            </div>
+            <div class="project-item">
+                <a href="#" onclick="openProject('venus4')">Terraforming</a>
+                <div class="project-description">地球化改造</div>
+            </div>
+            <div class="project-item">
+                <a href="#" onclick="openProject('venus5')">Cloud Cities</a>
+                <div class="project-description">云层城市</div>
+            </div>
+            <div class="project-item">
+                <a href="#" onclick="openProject('venus6')">Mining Operations</a>
+                <div class="project-description">采矿作业</div>
+            </div>
+            <div class="project-item">
+                <a href="#" onclick="openProject('venus7')">Climate Study</a>
+                <div class="project-description">气候研究</div>
+            </div>
+            <div class="project-item">
+                <a href="#" onclick="openProject('venus8')">Future Missions</a>
+                <div class="project-description">未来任务</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Markdown内容显示区域 -->
+    <div class="markdown-display" id="markdown-display">
+        <button class="markdown-close-btn" onclick="closeMarkdownDisplay()">&times;</button>
+        <div class="markdown-content" id="markdown-content">
+            <!-- markdown内容将动态加载到这里 -->
+        </div>
+    </div>
+
+    <!-- Three.js 库 -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        // 全局变量
+        let isZoomedIn = false;
+        let venus3DInstance = null;
+        let backgroundMusic = null;
+        let isMusicPlaying = false;
+        
+        // 页面切换功能
+        function switchToJupiter() {
+            // 保存当前音乐播放时间和状态
+            if (backgroundMusic) {
+                localStorage.setItem('musicTime', backgroundMusic.currentTime.toString());
+                localStorage.setItem('musicPlaying', isMusicPlaying.toString());
+            }
+            window.location.href = 'jupiter.html';
+        }
+        
+        function switchToMoon() {
+            // 保存当前音乐播放时间和状态
+            if (backgroundMusic) {
+                localStorage.setItem('musicTime', backgroundMusic.currentTime.toString());
+                localStorage.setItem('musicPlaying', isMusicPlaying.toString());
+            }
+            window.location.href = 'moon.html';
+        }
+        
+        // 音乐控制功能
+        function initMusic() {
+            backgroundMusic = document.getElementById('background-music');
+            const musicIcon = document.getElementById('music-icon');
+            
+            // 设置音量
+            backgroundMusic.volume = 0.3;
+            
+            // 从localStorage恢复音乐播放状态和时间
+            const savedMusicState = localStorage.getItem('musicPlaying');
+            const savedMusicTime = localStorage.getItem('musicTime');
+            
+            // 如果有保存的播放时间，设置音乐当前时间
+            if (savedMusicTime) {
+                backgroundMusic.currentTime = parseFloat(savedMusicTime);
+            }
+            
+            // 根据保存的状态决定是否播放音乐
+            if (savedMusicState === 'true') {
+                const playPromise = backgroundMusic.play();
+                
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        isMusicPlaying = true;
+                        musicIcon.textContent = '⏹︎';
+                        console.log('音乐继续播放成功');
+                    }).catch((error) => {
+                        console.log('自动播放被阻止，需要用户交互:', error);
+                        isMusicPlaying = false;
+                        musicIcon.textContent = '▶︎';
+                    });
+                }
+            } else {
+                // 如果之前是暂停状态，显示播放按钮
+                isMusicPlaying = false;
+                musicIcon.textContent = '▶︎';
+            }
+            
+            // 监听音频事件
+            backgroundMusic.addEventListener('ended', () => {
+                console.log('音乐播放结束');
+            });
+            
+            backgroundMusic.addEventListener('error', (e) => {
+                console.error('音乐加载失败:', e);
+                musicIcon.textContent = '❌';
+            });
+        }
+        
+        // 切换音乐播放/暂停
+        function toggleMusic() {
+            const musicIcon = document.getElementById('music-icon');
+            
+            if (!backgroundMusic) {
+                console.error('音频元素未找到');
+                return;
+            }
+            
+            if (isMusicPlaying) {
+                // 暂停音乐
+                backgroundMusic.pause();
+                isMusicPlaying = false;
+                musicIcon.textContent = '▶︎';
+                localStorage.setItem('musicPlaying', 'false');
+                localStorage.setItem('musicTime', backgroundMusic.currentTime.toString());
+            } else {
+                // 播放音乐
+                const playPromise = backgroundMusic.play();
+                
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        isMusicPlaying = true;
+                        musicIcon.textContent = '⏹︎';
+                        localStorage.setItem('musicPlaying', 'true');
+                    }).catch((error) => {
+                        console.error('播放失败:', error);
+                        musicIcon.textContent = '❌';
+                        localStorage.setItem('musicPlaying', 'false');
+                    });
+                }
+            }
+        }
+        
+        // 金星点击处理
+        function handleVenusClick() {
+            const venusCanvas = document.getElementById('venus-canvas');
+            const projectList = document.getElementById('project-list');
+            const markdownDisplay = document.getElementById('markdown-display');
+            const testTopic = document.getElementById('test-topic');
+            
+            // 如果markdown显示区域是可见的，优先关闭它并回到首页
+            if (markdownDisplay.classList.contains('visible')) {
+                markdownDisplay.classList.remove('visible');
+                // 延迟一点时间再恢复到首页状态，确保动画流畅
+                setTimeout(() => {
+                    venusCanvas.classList.remove('zoomed');
+                    projectList.classList.remove('visible');
+                    testTopic.classList.remove('visible');
+                    isZoomedIn = false;
+                    
+                    if (venus3DInstance) {
+                        venus3DInstance.zoomOut();
+                    }
+                }, 300);
+                return;
+            }
+            
+            if (!isZoomedIn) {
+                // 放大金星并移动到左侧
+                venusCanvas.classList.add('zoomed');
+                projectList.classList.add('visible');
+                testTopic.classList.add('visible');
+                isZoomedIn = true;
+                
+                // 调整金星相机以显示更多细节
+                if (venus3DInstance) {
+                    venus3DInstance.zoomIn();
+                }
+            } else {
+                // 恢复原始状态
+                venusCanvas.classList.remove('zoomed');
+                projectList.classList.remove('visible');
+                testTopic.classList.remove('visible');
+                isZoomedIn = false;
+                
+                if (venus3DInstance) {
+                    venus3DInstance.zoomOut();
+                }
+            }
+        }
+
+        // 项目点击处理
+        function openProject(projectName) {
+            loadMarkdownContent(projectName);
+        }
+        
+        // 加载并显示Markdown内容
+        async function loadMarkdownContent(projectName) {
+            const projectList = document.getElementById('project-list');
+            const markdownDisplay = document.getElementById('markdown-display');
+            const markdownContent = document.getElementById('markdown-content');
+            const testTopic = document.getElementById('test-topic');
+            
+            // 隐藏项目列表和Test Topic
+            projectList.classList.remove('visible');
+            testTopic.classList.remove('visible');
+            
+            // 显示加载状态
+            markdownContent.innerHTML = '<p>加载中...</p>';
+            markdownDisplay.classList.add('visible');
+            
+            try {
+                // 构建markdown文件路径
+                const markdownPath = `venus/${projectName}/index.md`;
+                
+                // 尝试从实际文件加载内容
+                let content;
+                try {
+                    const response = await fetch(markdownPath);
+                    if (response.ok) {
+                        content = await response.text();
+                    } else {
+                        throw new Error('文件加载失败');
+                    }
+                } catch (fetchError) {
+                    // 如果无法加载文件，使用预定义内容
+                    console.log('使用预定义内容:', fetchError.message);
+                    content = await loadMarkdownFromPath(projectName);
+                }
+                
+                // 将markdown转换为HTML并显示
+                const htmlContent = parseMarkdownToHTML(content);
+                markdownContent.innerHTML = htmlContent;
+                
+            } catch (error) {
+                console.error('加载markdown内容失败:', error);
+                markdownContent.innerHTML = `
+                    <h1>${projectName.toUpperCase()} 项目</h1>
+                    <p>抱歉，无法加载项目详情。</p>
+                    <p>这是一个示例项目，展示了金星探索相关技术。</p>
+                `;
+            }
+        }
+        
+        // 模拟从本地文件加载markdown内容
+        async function loadMarkdownFromPath(projectName) {
+            // 金星项目的预定义内容
+            const markdownContents = {
+                'venus1': `# Venus Exploration
+                
+
+
+### 大气成分
+- 96.5% 二氧化碳
+- 3.5% 氮气
+- 微量水蒸气、二氧化硫
+- 硫酸云层
+
+### 大气特征
+- 极强的温室效应
+- 超级旋转现象
+- 硫酸雨（在高空蒸发）
+- 闪电活动
+
+### 研究意义
+- 温室效应机制
+- 大气动力学
+- 气候演化模型
+- 地球气候变化对比研究`,
+                
+                'venus3': `# Surface Analysis
+                
+## 金星表面分析
+金星表面隐藏在厚厚的云层之下，温度极高，环境极其恶劣。
+
+### 表面特征
+- 广阔的火山平原
+- 大型火山结构
+- 撞击坑（相对较少）
+- 类似地球的板块构造迹象
+
+### 地质构造
+- 伊什塔尔高地
+- 阿芙罗狄蒂高地
+- 贝塔区域火山群
+- 巨大的峡谷系统
+
+### 表面条件
+- 温度：462°C（铅都会融化）
+- 压力：90个地球大气压
+- 风速：表面微弱，高空极强
+
+### 探测方法
+- 雷达成像
+- 红外光谱
+- 着陆器直接测量`,
+                
+                'venus4': `# Venus Terraforming
+                
+## 金星地球化改造
+金星地球化是一个极其复杂的理论工程，需要根本性地改变其大气和环境。
+
+### 主要挑战
+- 超厚的CO2大气层
+- 极高的表面温度
+- 缺乏水资源
+- 缺乏磁场保护
+- 逆向自转
+
+### 改造方案
+#### 大气改造
+- 移除过量CO2
+- 引入氧气和氮气
+- 降低大气压力
+- 创造水循环
+
+#### 温度调节
+- 太阳遮蔽板
+- 大气化学改造
+- 人工磁场生成
+
+#### 水资源
+- 彗星撞击引水
+- 大气中水汽凝结
+- 地下水开采
+
+### 时间尺度
+预计需要数千到数万年的时间完成基本改造。`,
+                
+                'venus5': `# Cloud Cities
+                
+## 金星云层城市
+由于金星表面环境极其恶劣，科学家提出在其高层大气中建立浮空城市。
+
+### 概念优势
+- 适宜的温度（50-60公里高度约0-50°C）
+- 相对温和的压力
+- 丰富的CO2资源
+- 太阳能充足
+
+### 技术方案
+#### 浮空平台
+- 充满氢气或氦气的巨型气囊
+- 自维持的生态系统
+- 模块化设计便于扩展
+
+#### 生命支持
+- 大气处理系统
+- 水循环系统
+- 食物生产（温室农业）
+- 废物回收利用
+
+#### 能源系统
+- 太阳能电池板
+- 风力发电
+- 地热能利用
+
+### 研究价值
+- 极端环境生存技术
+- 大气化学研究
+- 太阳系殖民技术验证
+
+### 未来前景
+可能成为人类在金星生存的唯一可行方案。`,
+                
+                'venus6': `# Mining Operations
+                
+## 金星采矿作业
+金星拥有丰富的矿物资源，但极端环境使开采变得极其困难。
+
+### 资源分布
+- 丰富的硫化物
+- 金属矿藏
+- 稀土元素
+- 碳化合物
+
+### 开采挑战
+- 极高温度和压力
+- 腐蚀性环境
+- 运输困难
+- 设备维护
+
+### 技术方案
+- 自动化机器人
+- 耐高温材料
+- 远程操作系统
+- 在轨处理技术`,
+                
+                'venus7': `# Climate Study
+                
+## 金星气候研究
+金星的极端气候为我们理解温室效应提供了独特的实验室。
+
+### 气候特征
+- 失控的温室效应
+- 超级旋转大气
+- 极端温度梯度
+- 复杂的云层系统
+
+### 研究价值
+- 气候模型验证
+- 温室效应机制
+- 大气动力学
+- 行星演化历史
+
+### 应用意义
+对地球气候变化研究具有重要启发意义。`,
+                
+                'venus8': `# Future Missions
+                
+## 未来金星任务
+多个国家和机构正在规划新的金星探索任务。
+
+### 计划任务
+- VERITAS轨道器（NASA）
+- DAVINCI+大气探测器（NASA）
+- EnVision轨道器（ESA）
+- 金星生命探测任务
+
+### 技术目标
+- 表面详细成像
+- 大气成分分析
+- 地质结构研究
+- 生命迹象搜寻
+
+### 长期愿景
+建立金星研究基地，为人类探索太阳系奠定基础。`
+            };
+            
+            return markdownContents[projectName] || `# ${projectName.toUpperCase()}项目\n\n项目详情开发中...`;
+        }
+        
+        // 简单的Markdown到HTML转换器
+        function parseMarkdownToHTML(markdown) {
+            let html = markdown;
+            
+            // 转换标题
+            html = html.replace(/^### (.*$)/gm, '<h3>$1</h3>');
+            html = html.replace(/^## (.*$)/gm, '<h2>$1</h2>');
+            html = html.replace(/^# (.*$)/gm, '<h1>$1</h1>');
+            
+            // 转换代码块
+            html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
+            
+            // 转换行内代码
+            html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+            
+            // 转换列表
+            html = html.replace(/^- (.*$)/gm, '<li>$1</li>');
+            html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+            
+            // 转换复选框列表
+            html = html.replace(/- \[x\] (.*$)/gm, '<li>✓ $1</li>');
+            html = html.replace(/- \[ \] (.*$)/gm, '<li>○ $1</li>');
+            
+            // 转换段落
+            html = html.replace(/^(?!<[h|u|p|l])(.+)$/gm, '<p>$1</p>');
+            
+            // 清理多余的空段落
+            html = html.replace(/<p><\/p>/g, '');
+            
+            return html;
+        }
+        
+        // 关闭Markdown显示区域
+        function closeMarkdownDisplay() {
+            const projectList = document.getElementById('project-list');
+            const markdownDisplay = document.getElementById('markdown-display');
+            const testTopic = document.getElementById('test-topic');
+            
+            // 隐藏markdown显示区域
+            markdownDisplay.classList.remove('visible');
+            
+            // 延迟显示项目列表和Test Topic，创建平滑过渡
+            setTimeout(() => {
+                projectList.classList.add('visible');
+                testTopic.classList.add('visible');
+            }, 300);
+        }
+        
+        // 初始化Markdown显示区域的滚动功能
+        function initMarkdownScroll() {
+            const markdownDisplay = document.getElementById('markdown-display');
+            
+            // 添加滚轮事件处理
+            markdownDisplay.addEventListener('wheel', (event) => {
+                // 只有当markdown显示区域可见时才处理滚轮事件
+                if (!markdownDisplay.classList.contains('visible')) return;
+                
+                event.preventDefault();
+                event.stopPropagation();
+                
+                // 获取当前滚动位置
+                const currentScrollTop = markdownDisplay.scrollTop;
+                const scrollHeight = markdownDisplay.scrollHeight;
+                const clientHeight = markdownDisplay.clientHeight;
+                
+                // 计算滚动增量
+                const scrollDelta = event.deltaY * 0.8;
+                
+                // 计算新的滚动位置
+                let newScrollTop = currentScrollTop + scrollDelta;
+                
+                // 确保滚动位置在有效范围内
+                newScrollTop = Math.max(0, Math.min(newScrollTop, scrollHeight - clientHeight));
+                
+                // 应用新的滚动位置
+                markdownDisplay.scrollTop = newScrollTop;
+                
+            }, { passive: false });
+            
+            // 阻止在markdown区域内的其他滚轮事件冒泡
+            markdownDisplay.addEventListener('mouseenter', () => {
+                const starfield = window.starfieldInstance;
+                if (starfield) {
+                    starfield.markdownScrollActive = true;
+                }
+            });
+            
+            markdownDisplay.addEventListener('mouseleave', () => {
+                const starfield = window.starfieldInstance;
+                if (starfield) {
+                    starfield.markdownScrollActive = false;
+                }
+            });
+        }
+
+        // 项目列表鼠标滚轮控制
+        function initProjectListScroll() {
+            const projectList = document.getElementById('project-list');
+            const projectListContent = document.querySelector('.project-list-content');
+            
+            let scrollPosition = 0;
+            let animationFrame;
+            let lastTime = 0;
+            let userScrolling = false;
+            let userScrollTimeout;
+
+            function getContentHeight() {
+                return projectListContent.scrollHeight / 2;
+            }
+
+            function autoScroll(currentTime) {
+                if (!lastTime) lastTime = currentTime;
+                const deltaTime = currentTime - lastTime;
+                lastTime = currentTime;
+                
+                if (!userScrolling && projectList.classList.contains('visible')) {
+                    const scrollSpeed = 50;
+                    scrollPosition += (scrollSpeed * deltaTime) / 1000;
+                    
+                    const contentHeight = getContentHeight();
+                    
+                    if (scrollPosition >= contentHeight) {
+                        scrollPosition = scrollPosition % contentHeight;
+                    }
+                    
+                    projectListContent.style.transform = `translateY(-${scrollPosition}px)`;
+                }
+                
+                animationFrame = requestAnimationFrame(autoScroll);
+            }
+
+            autoScroll(0);
+
+            projectList.addEventListener('wheel', (event) => {
+                if (!projectList.classList.contains('visible')) return;
+                
+                event.preventDefault();
+                
+                userScrolling = true;
+                
+                if (userScrollTimeout) {
+                    clearTimeout(userScrollTimeout);
+                }
+                
+                const contentHeight = getContentHeight();
+                scrollPosition += event.deltaY * 0.5;
+
+                if (scrollPosition >= contentHeight) {
+                    scrollPosition = scrollPosition % contentHeight;
+                } else if (scrollPosition < 0) {
+                    scrollPosition = contentHeight + (scrollPosition % contentHeight);
+                }
+                
+                projectListContent.style.transform = `translateY(-${scrollPosition}px)`;
+                lastTime = 0;
+                
+                userScrollTimeout = setTimeout(() => {
+                    userScrolling = false;
+                    lastTime = 0;
+                }, 2000);
+                
+            }, { passive: false });
+        }
+
+        // 3D金星类
+        class Venus3D {
+            constructor() {
+                this.scene = new THREE.Scene();
+                this.camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
+                this.renderer = new THREE.WebGLRenderer({antialias: true, alpha: true});
+                this.renderer.setSize(300, 300);
+                this.renderer.setClearColor(0x000000, 0);
+                
+                const container = document.getElementById('venus-canvas');
+                container.appendChild(this.renderer.domElement);
+                
+                // 添加点击事件
+                container.addEventListener('click', handleVenusClick);
+
+                this.setupLighting();
+                this.createVenus();
+                this.setupCamera();
+                this.animate();
+                
+                // 保存实例引用
+                venus3DInstance = this;
+            }
+            
+            setupLighting() {
+                // 主光源 - 模拟太阳光，金星接收的光照更强
+                const directionalLight = new THREE.DirectionalLight(0xffdd88, 2.0);
+                directionalLight.position.set(8, 3, 8);
+                this.scene.add(directionalLight);
+                
+                // 环境光 - 金星大气散射，偏黄色
+                const ambientLight = new THREE.AmbientLight(0x665544, 0.3);
+                this.scene.add(ambientLight);
+                
+                // 补充光源 - 模拟浓厚大气的散射光
+                const atmosphereLight = new THREE.DirectionalLight(0xffcc66, 0.4);
+                atmosphereLight.position.set(-5, -2, 3);
+                this.scene.add(atmosphereLight);
+            }
+            
+            createVenus() {
+                const geometry = new THREE.SphereGeometry(2, 64, 64);
+                
+                // 创建金星材质
+                const material = new THREE.MeshLambertMaterial({
+                    color: 0xffffff,
+                    transparent: false
+                });
+                
+                // 立即创建程序化纹理
+                this.createProceduralTexture(material);
+                
+                // 创建金星网格并添加到场景
+                this.venus = new THREE.Mesh(geometry, material);
+                this.scene.add(this.venus);
+                
+                // 在后台异步加载高质量纹理
+                this.loadHighQualityTextures(material);
+            }
+            
+            loadHighQualityTextures(material) {
+                const textureLoader = new THREE.TextureLoader();
+                
+                // 优先使用本地贴图
+                const localTexturePath = 'pic/venus.jpg';
+                
+                textureLoader.load(
+                    localTexturePath,
+                    (texture) => {
+                        // 本地金星贴图加载成功
+                        texture.wrapS = THREE.RepeatWrapping;
+                        texture.wrapT = THREE.ClampToEdgeWrapping;
+                        texture.flipY = false;
+                        texture.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
+                        material.map = texture;
+                        material.needsUpdate = true;
+                        console.log('本地金星贴图加载成功');
+                    },
+                    (progress) => {
+                        console.log('金星贴图加载进度:', (progress.loaded / progress.total * 100) + '%');
+                    },
+                    (error) => {
+                        console.error('本地金星贴图加载失败，尝试网络纹理:', error);
+                        this.loadNetworkTextures(material);
+                    }
+                );
+            }
+            
+            loadNetworkTextures(material) {
+                const textureLoader = new THREE.TextureLoader();
+                
+                const loadWithTimeout = (url, timeout = 5000) => {
+                    return new Promise((resolve, reject) => {
+                        const timer = setTimeout(() => {
+                            reject(new Error('Texture load timeout'));
+                        }, timeout);
+                        
+                        textureLoader.load(
+                            url,
+                            (texture) => {
+                                clearTimeout(timer);
+                                resolve(texture);
+                            },
+                            undefined,
+                            (error) => {
+                                clearTimeout(timer);
+                                reject(error);
+                            }
+                        );
+                    });
+                };
+                
+                // 使用真实的NASA金星纹理URLs作为备用
+                const textureUrls = [
+                    // NASA JPL 官方金星表面雷达图像
+                    'https://photojournal.jpl.nasa.gov/jpegMod/PIA00233_modest.jpg',
+                    // USGS 行星地图集 - 麦哲伦号数据
+                    'https://astrogeology.usgs.gov/cache/images/venus_magellan_topography_global_4641m_v02.jpg',
+                    // NASA Solar System Exploration
+                    'https://solarsystem.nasa.gov/system/resources/detail_files/771_PIA00148.jpg',
+                    // ESA Venus Express 数据
+                    'https://www.esa.int/var/esa/storage/images/esa_multimedia/images/2007/04/venus_surface_topography/9932890-3-eng-GB/Venus_surface_topography.jpg',
+                    // Planet Pixel Emporium 高分辨率
+                    'https://planetpixelemporium.com/venus/venusmap.jpg',
+                    // NASA Goddard 金星地形图
+                    'https://svs.gsfc.nasa.gov/vis/a000000/a003500/a003579/venus_magellan_topo_4096.jpg',
+                    // 备用高质量纹理
+                    'https://map.gsfc.nasa.gov/media/121238/venus_magellan_c3-mdir_global_color_mosaics_4641m_v02.jpg'
+                ];
+                
+                // 并行尝试所有纹理源，增加超时时间以确保加载
+                Promise.any(textureUrls.map(url => loadWithTimeout(url, 5000)))
+                    .then((texture) => {
+                        texture.wrapS = THREE.RepeatWrapping;
+                        texture.wrapT = THREE.ClampToEdgeWrapping;
+                        texture.flipY = false;
+                        // 增强金星表面细节
+                        texture.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
+                        material.map = texture;
+                        material.needsUpdate = true;
+                        console.log('网络金星纹理加载成功');
+                    })
+                    .catch(() => {
+                        console.log('所有网络纹理加载失败，使用程序化金星纹理');
+                        // 尝试备用方案
+                        this.loadBackupTextures(material);
+                    });
+            }
+            
+            loadBackupTextures(material) {
+                const textureLoader = new THREE.TextureLoader();
+                
+                // 备用CDN纹理源
+                const backupUrls = [
+                    'https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg',
+                    'https://cdn.jsdelivr.net/gh/mrdoob/three.js@master/examples/textures/planets/earth_atmos_2048.jpg',
+                    'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_atmos_2048.jpg'
+                ];
+                
+                Promise.any(backupUrls.map(url => 
+                    new Promise((resolve, reject) => {
+                        textureLoader.load(url, resolve, undefined, reject);
+                    })
+                ))
+                .then((texture) => {
+                    texture.wrapS = THREE.RepeatWrapping;
+                    texture.wrapT = THREE.ClampToEdgeWrapping;
+                    texture.flipY = false;
+                    material.map = texture;
+                    material.needsUpdate = true;
+                    console.log('备用纹理加载成功');
+                })
+                .catch(() => {
+                    console.log('所有纹理加载失败，使用程序化纹理');
+                });
+            }
+            
+            createProceduralTexture(material) {
+                // 创建高质量程序化金星纹理
+                const canvas = document.createElement('canvas');
+                canvas.width = 2048;
+                canvas.height = 1024;
+                const context = canvas.getContext('2d');
+                
+                // 金星基础表面颜色 - 基于麦哲伦号雷达数据的颜色调色板
+                const baseGradient = context.createLinearGradient(0, 0, 0, 1024);
+                baseGradient.addColorStop(0, '#f4d03f');    // 高地 - 金黄色
+                baseGradient.addColorStop(0.2, '#f7dc6f');  // 中等高度
+                baseGradient.addColorStop(0.4, '#f8c471');  // 平原
+                baseGradient.addColorStop(0.6, '#e67e22');  // 低地
+                baseGradient.addColorStop(0.8, '#d35400');  // 峡谷
+                baseGradient.addColorStop(1, '#a04000');    // 最深处
+                
+                context.fillStyle = baseGradient;
+                context.fillRect(0, 0, 2048, 1024);
+                
+                // 添加基于真实地形的噪声
+                const imageData = context.getImageData(0, 0, 2048, 1024);
+                const data = imageData.data;
+                
+                for (let y = 0; y < 1024; y++) {
+                    for (let x = 0; x < 2048; x++) {
+                        const index = (y * 2048 + x) * 4;
+                        
+                        // 使用多层柏林噪声模拟地形
+                        const noise1 = this.perlinNoise(x * 0.01, y * 0.01) * 30;
+                        const noise2 = this.perlinNoise(x * 0.05, y * 0.05) * 15;
+                        const noise3 = this.perlinNoise(x * 0.1, y * 0.1) * 8;
+                        const totalNoise = noise1 + noise2 + noise3;
+                        
+                        // 应用噪声到颜色
+                        data[index] = Math.max(0, Math.min(255, data[index] + totalNoise));
+                        data[index + 1] = Math.max(0, Math.min(255, data[index + 1] + totalNoise * 0.8));
+                        data[index + 2] = Math.max(0, Math.min(255, data[index + 2] + totalNoise * 0.6));
+                    }
+                }
+                
+                context.putImageData(imageData, 0, 0);
+                
+                // 添加金星主要地质特征
+                this.addVenusFeatures(context);
+                
+                // 添加大气层效果
+                this.addAtmosphericEffects(context);
+                
+                // 创建纹理
+                const texture = new THREE.CanvasTexture(canvas);
+                texture.wrapS = THREE.RepeatWrapping;
+                texture.wrapT = THREE.ClampToEdgeWrapping;
+                texture.flipY = false;
+                texture.generateMipmaps = true;
+                texture.minFilter = THREE.LinearMipmapLinearFilter;
+                texture.magFilter = THREE.LinearFilter;
+                
+                material.map = texture;
+                material.needsUpdate = true;
+            }
+            
+            // 简单的柏林噪声函数
+            perlinNoise(x, y) {
+                return (Math.sin(x) + Math.sin(y * 1.3) + Math.sin(x * 0.7 + y * 0.9)) / 3;
+            }
+            
+            // 添加金星地质特征
+            addVenusFeatures(context) {
+                // 伊什塔尔高地 (Ishtar Terra)
+                this.drawFeature(context, 300, 200, 150, '#f1c40f', 0.7);
+                
+                // 阿芙罗狄蒂高地 (Aphrodite Terra)
+                this.drawFeature(context, 1400, 600, 200, '#f39c12', 0.8);
+                
+                // 贝塔区域 (Beta Regio)
+                this.drawFeature(context, 800, 400, 80, '#e67e22', 0.6);
+                
+                // 阿尔法区域 (Alpha Regio)
+                this.drawFeature(context, 1200, 300, 100, '#d35400', 0.5);
+                
+                // 添加火山特征
+                const volcanoes = [
+                    {x: 350, y: 180, r: 25}, // 麦克斯韦山脉
+                    {x: 800, y: 420, r: 20}, // 瑞亚山
+                    {x: 1450, y: 580, r: 30}, // 马特山
+                ];
+                
+                volcanoes.forEach(volcano => {
+                    this.drawVolcano(context, volcano.x, volcano.y, volcano.r);
+                });
+                
+                // 添加撞击坑（金星撞击坑较少但较大）
+                for (let i = 0; i < 25; i++) {
+                    const x = Math.random() * 2048;
+                    const y = Math.random() * 1024;
+                    const radius = Math.random() * 20 + 15;
+                    this.drawCrater(context, x, y, radius);
+                }
+            }
+            
+            drawFeature(context, x, y, radius, color, opacity) {
+                const gradient = context.createRadialGradient(x, y, 0, x, y, radius);
+                gradient.addColorStop(0, `rgba(241, 196, 15, ${opacity})`);
+                gradient.addColorStop(0.5, color);
+                gradient.addColorStop(1, 'rgba(244, 208, 63, 0)');
+                
+                context.save();
+                context.globalCompositeOperation = 'overlay';
+                context.fillStyle = gradient;
+                context.beginPath();
+                context.arc(x, y, radius, 0, Math.PI * 2);
+                context.fill();
+                context.restore();
+            }
+            
+            drawVolcano(context, x, y, radius) {
+                const gradient = context.createRadialGradient(x, y, 0, x, y, radius);
+                gradient.addColorStop(0, 'rgba(230, 126, 34, 0.8)');
+                gradient.addColorStop(0.6, 'rgba(211, 84, 0, 0.6)');
+                gradient.addColorStop(1, 'rgba(160, 64, 0, 0)');
+                
+                context.save();
+                context.globalCompositeOperation = 'multiply';
+                context.fillStyle = gradient;
+                context.beginPath();
+                context.arc(x, y, radius, 0, Math.PI * 2);
+                context.fill();
+                context.restore();
+            }
+            
+            drawCrater(context, x, y, radius) {
+                const gradient = context.createRadialGradient(x, y, 0, x, y, radius);
+                gradient.addColorStop(0, 'rgba(101, 67, 33, 0.6)');
+                gradient.addColorStop(0.4, 'rgba(139, 69, 19, 0.4)');
+                gradient.addColorStop(0.8, 'rgba(160, 82, 45, 0.2)');
+                gradient.addColorStop(1, 'rgba(205, 92, 92, 0)');
+                
+                context.save();
+                context.globalCompositeOperation = 'multiply';
+                context.fillStyle = gradient;
+                context.beginPath();
+                context.arc(x, y, radius, 0, Math.PI * 2);
+                context.fill();
+                context.restore();
+            }
+            
+            // 添加大气层效果
+            addAtmosphericEffects(context) {
+                // 金星浓厚大气的散射效果
+                const atmosphereGradient = context.createLinearGradient(0, 0, 2048, 1024);
+                atmosphereGradient.addColorStop(0, 'rgba(255, 230, 150, 0.1)');
+                atmosphereGradient.addColorStop(0.5, 'rgba(255, 200, 100, 0.05)');
+                atmosphereGradient.addColorStop(1, 'rgba(255, 180, 80, 0.1)');
+                
+                context.save();
+                context.globalCompositeOperation = 'overlay';
+                context.fillStyle = atmosphereGradient;
+                context.fillRect(0, 0, 2048, 1024);
+                context.restore();
+            }
+            
+            setupCamera() {
+                this.camera.position.z = 6;
+            }
+            
+            zoomIn() {
+                // CSS变换处理缩放
+            }
+            
+            zoomOut() {
+                // CSS变换处理缩放
+            }
+            
+            animate() {
+                requestAnimationFrame(() => this.animate());
+                if (this.venus) {
+                    // 金星逆向自转（与其他行星相反）
+                    this.venus.rotation.y -= 0.0005; 
+                    this.venus.rotation.x += 0.0002;
+                }
+                this.renderer.render(this.scene, this.camera);
+            }
+        }
+
+        class Star {
+            constructor(x, y, z) {
+                this.x = x;
+                this.y = y;
+                this.z = z;
+                this.prevX = 0;
+                this.prevY = 0;
+                this.opacity = 1;
+                this.size = Math.random() * 2 + 0.5;
+                this.color = this.generateStarColor();
+            }
+            
+            generateStarColor() {
+                // 金星主题的星星颜色 - 更多金黄色调
+                const colors = [
+                    '#ffffff',
+                    '#ffffaa',
+                    '#ffdd88',
+                    '#ffd700',
+                    '#ffcc66',
+                    '#ffaa44'
+                ];
+                return colors[Math.floor(Math.random() * colors.length)];
+            }
+            
+            update(speed, mouseX, mouseY) {
+                this.prevX = this.screenX || 0;
+                this.prevY = this.screenY || 0;
+                
+                this.z -= speed;
+                
+                if (this.z <= 0) {
+                    this.z = 1000;
+                    this.x = (Math.random() - 0.5) * 2000;
+                    this.y = (Math.random() - 0.5) * 2000;
+                    this.color = this.generateStarColor();
+                }
+                
+                const perspective = 800;
+                const venusElement = document.getElementById('venus-canvas');
+                const venusRect = venusElement.getBoundingClientRect();
+                const venusCenterX = venusRect.left + venusRect.width / 2;
+                const venusCenterY = venusRect.top + venusRect.height / 2;
+                
+                this.screenX = (this.x / this.z) * perspective + venusCenterX + mouseX * 0.2;
+                this.screenY = (this.y / this.z) * perspective + venusCenterY + mouseY * 0.2;
+                
+                this.opacity = Math.max(0, 1 - this.z / 1000);
+                this.projectedSize = this.size * (1 - this.z / 1000) + 0.5;
+            }
+            
+            draw(ctx, speed) {
+                if (this.screenX < -50 || this.screenX > canvas.width + 50 || 
+                    this.screenY < -50 || this.screenY > canvas.height + 50) {
+                    return;
+                }
+                
+                // 绘制拖尾效果
+                if (speed > 3 && this.prevX && this.prevY) {
+                    const gradient = ctx.createLinearGradient(
+                        this.prevX, this.prevY,
+                        this.screenX, this.screenY
+                    );
+                    
+                    gradient.addColorStop(0, `rgba(255, 215, 0, 0)`);
+                    gradient.addColorStop(1, `rgba(255, 215, 0, ${this.opacity * 0.6})`);
+                    
+                    ctx.strokeStyle = gradient;
+                    ctx.lineWidth = this.projectedSize;
+                    ctx.beginPath();
+                    ctx.moveTo(this.prevX, this.prevY);
+                    ctx.lineTo(this.screenX, this.screenY);
+                    ctx.stroke();
+                }
+                
+                // 绘制星星本体
+                ctx.save();
+                ctx.globalAlpha = this.opacity;
+                
+                // 绘制星星光晕
+                const glowSize = this.projectedSize * 3;
+                const glowGradient = ctx.createRadialGradient(
+                    this.screenX, this.screenY, 0,
+                    this.screenX, this.screenY, glowSize
+                );
+                glowGradient.addColorStop(0, `rgba(255, 215, 0, ${this.opacity * 0.8})`);
+                glowGradient.addColorStop(0.5, `rgba(255, 215, 0, ${this.opacity * 0.3})`);
+                glowGradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
+                
+                ctx.fillStyle = glowGradient;
+                ctx.beginPath();
+                ctx.arc(this.screenX, this.screenY, glowSize, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 绘制星星核心
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.screenX, this.screenY, this.projectedSize, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 高速时的额外光效
+                if (speed > 5) {
+                    ctx.globalAlpha = this.opacity * 0.5;
+                    ctx.fillStyle = '#ffd700';
+                    ctx.beginPath();
+                    ctx.arc(this.screenX, this.screenY, this.projectedSize * 0.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                ctx.restore();
+            }
+        }
+
+        class Starfield {
+            constructor() {
+                this.canvas = document.getElementById('starfield');
+                this.ctx = this.canvas.getContext('2d');
+                this.stars = [];
+                this.numStars = 1500;
+                this.speed = 2;
+                this.mouseX = 0;
+                this.mouseY = 0;
+                this.isPaused = false;
+                this.targetSpeed = this.speed;
+                this.isMousePressed = false;
+                this.baseSpeed = 1;
+                this.boostSpeed = 8;
+                this.markdownScrollActive = false;
+                
+                this.initCanvas();
+                this.generateStars();
+                this.bindEvents();
+                this.animate();
+                
+                window.starfieldInstance = this;
+            }
+            
+            initCanvas() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+            }
+            
+            generateStars() {
+                for (let i = 0; i < this.numStars; i++) {
+                    const x = (Math.random() - 0.5) * 2000;
+                    const y = (Math.random() - 0.5) * 2000;
+                    const z = Math.random() * 1000;
+                    this.stars.push(new Star(x, y, z));
+                }
+            }
+            
+            bindEvents() {
+                window.addEventListener('mousedown', (e) => {
+                    this.isMousePressed = true;
+                    this.targetSpeed = this.boostSpeed;
+                });
+                
+                window.addEventListener('mouseup', (e) => {
+                    this.isMousePressed = false;
+                    this.targetSpeed = this.baseSpeed;
+                });
+                
+                window.addEventListener('mousemove', (e) => {
+                    this.mouseX = (e.clientX - window.innerWidth / 2) * 0.3;
+                    this.mouseY = (e.clientY - window.innerHeight / 2) * 0.3;
+                });
+                
+                window.addEventListener('wheel', (e) => {
+                    if (this.markdownScrollActive) {
+                        return;
+                    }
+                    
+                    const projectList = document.getElementById('project-list');
+                    const projectListRect = projectList.getBoundingClientRect();
+                    
+                    const isInProjectList = projectList.classList.contains('visible') &&
+                        e.clientX >= projectListRect.left &&
+                        e.clientX <= projectListRect.right &&
+                        e.clientY >= projectListRect.top &&
+                        e.clientY <= projectListRect.bottom;
+                    
+                    if (isInProjectList) {
+                        return;
+                    }
+                    
+                    e.preventDefault();
+                    const delta = e.deltaY > 0 ? 0.5 : -0.5;
+                    this.baseSpeed = Math.max(0.1, Math.min(15, this.baseSpeed + delta));
+                    this.boostSpeed = Math.max(this.baseSpeed + 2, this.baseSpeed * 3);
+                    
+                    if (!this.isMousePressed) {
+                        this.targetSpeed = this.baseSpeed;
+                    } else {
+                        this.targetSpeed = this.boostSpeed;
+                    }
+                }, { passive: false });
+                
+                window.addEventListener('keydown', (e) => {
+                    if (e.code === 'Space') {
+                        e.preventDefault();
+                        this.isPaused = !this.isPaused;
+                    }
+                });
+                
+                window.addEventListener('resize', () => {
+                    this.initCanvas();
+                });
+                
+                this.canvas.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                });
+                
+                window.addEventListener('mouseleave', () => {
+                    this.isMousePressed = false;
+                    this.targetSpeed = this.baseSpeed;
+                });
+            }
+            
+            animate() {
+                if (!this.isPaused) {
+                    this.speed += (this.targetSpeed - this.speed) * 0.1;
+                    
+                    // 金星主题的背景色
+                    this.ctx.fillStyle = 'rgba(20, 15, 5, 0.1)';
+                    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                    
+                    // 绘制金星主题背景渐变
+                    const gradient = this.ctx.createRadialGradient(
+                        this.canvas.width / 2, this.canvas.height / 2, 0,
+                        this.canvas.width / 2, this.canvas.height / 2, 
+                        Math.max(this.canvas.width, this.canvas.height) / 2
+                    );
+                    gradient.addColorStop(0, 'rgba(46, 42, 26, 0.05)');
+                    gradient.addColorStop(1, 'rgba(0, 0, 0, 0.1)');
+                    
+                    this.ctx.fillStyle = gradient;
+                    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                    
+                    // 更新和绘制星星
+                    for (let star of this.stars) {
+                        star.update(this.speed, this.mouseX, this.mouseY);
+                        star.draw(this.ctx, this.speed);
+                    }
+                    
+                    // 高速时的屏幕效果 - 金星金色
+                    if (this.speed > 8) {
+                        this.ctx.save();
+                        this.ctx.globalAlpha = Math.min(0.15, (this.speed - 8) * 0.01);
+                        this.ctx.fillStyle = '#332200';
+                        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                        this.ctx.restore();
+                    }
+                }
+                
+                requestAnimationFrame(() => this.animate());
+            }
+        }
+
+        // 初始化星空和金星
+        window.addEventListener('load', () => {
+            window.canvas = document.getElementById('starfield');
+            new Starfield();
+            new Venus3D();
+            initProjectListScroll();
+            initMarkdownScroll();
+            initMusic();
+        });
+        
+        // ESC键恢复视角
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const markdownDisplay = document.getElementById('markdown-display');
+                if (markdownDisplay.classList.contains('visible')) {
+                    closeMarkdownDisplay();
+                } else if (isZoomedIn) {
+                    handleVenusClick();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
